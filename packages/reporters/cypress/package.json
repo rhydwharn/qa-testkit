@@ -1,0 +1,11 @@
+{
+  "name": "@qa-tm/cypress-reporter",
+  "version": "0.1.0",
+  "description": "Cypress reporter for QA Test Management Tool",
+  "main": "src/index.js",
+  "license": "MIT",
+  "keywords": ["cypress", "reporter", "test-management", "qa-tm"],
+  "peerDependencies": {
+    "cypress": ">=12"
+  }
+}

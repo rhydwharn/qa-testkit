@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+
+# TypeScript build info (generated artifact)
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Env files — copy .env.example and fill in values on each machine
+.env
+.env.local
+.env.production
+
+# User-uploaded files — do not commit binary uploads
+apps/web/public/uploads/
+
+# Claude Code local settings — machine-specific, not project code
+.claude/
+
+# Misc
+.DS_Store
+*.pem
+.turbo/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Docker
+docker-compose.override.yml

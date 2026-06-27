@@ -1,0 +1,11 @@
+{
+  "name": "@qa-tm/jest-reporter",
+  "version": "0.1.0",
+  "description": "Jest reporter for QA Test Management Tool",
+  "main": "src/index.js",
+  "license": "MIT",
+  "keywords": ["jest", "reporter", "test-management", "qa-tm"],
+  "peerDependencies": {
+    "jest": ">=29"
+  }
+}

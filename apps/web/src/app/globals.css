@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Cream background, olive accents */
+    --background: 42 30% 96%;        /* warm cream #F5F0E8 */
+    --foreground: 35 25% 18%;        /* dark warm brown #342D23 */
+    --card: 0 0% 100%;               /* white cards */
+    --card-foreground: 35 25% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 35 25% 18%;
+
+    /* Olive green primary */
+    --primary: 82 35% 38%;           /* olive #6B7A42 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 42 20% 90%;         /* light cream */
+    --secondary-foreground: 35 25% 25%;
+    --muted: 42 20% 92%;             /* warm muted */
+    --muted-foreground: 35 15% 48%;  /* warm grey */
+    --accent: 82 25% 88%;            /* very light olive tint */
+    --accent-foreground: 82 35% 30%;
+
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 42 20% 84%;            /* warm beige border */
+    --input: 42 20% 88%;
+    --ring: 82 35% 38%;
+    --radius: 0.5rem;
+
+    /* Sidebar: dark forest olive */
+    --sidebar-bg: 82 25% 14%;        /* dark forest #25301A */
+    --sidebar-fg: 82 15% 65%;        /* muted sage */
+    --sidebar-fg-muted: 82 10% 45%;
+    --sidebar-border: 82 20% 18%;
+    --sidebar-active-bg: 82 35% 38%; /* olive */
+    --sidebar-active-fg: 0 0% 100%;
+    --sidebar-hover: 82 20% 20%;
+
+    /* Status */
+    --pass: 142 45% 38%;
+    --fail: 0 58% 45%;
+    --blocked: 35 75% 48%;
+    --skipped: 35 10% 50%;
+  }
+
+  .dark {
+    --background: 35 20% 10%;
+    --foreground: 42 25% 88%;
+    --card: 35 20% 13%;
+    --card-foreground: 42 25% 88%;
+    --popover: 35 20% 13%;
+    --popover-foreground: 42 25% 88%;
+    --primary: 82 35% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 15% 18%;
+    --secondary-foreground: 42 25% 80%;
+    --muted: 35 15% 17%;
+    --muted-foreground: 35 12% 55%;
+    --accent: 82 20% 20%;
+    --accent-foreground: 82 35% 65%;
+    --destructive: 0 55% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35 15% 22%;
+    --input: 35 15% 22%;
+    --ring: 82 35% 52%;
+    --sidebar-bg: 82 25% 8%;
+    --sidebar-border: 82 20% 12%;
+    --sidebar-hover: 82 20% 14%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+
+/* Smooth transitions */
+*, *::before, *::after {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 120ms;
+}
+
+/* Status utilities */
+.text-pass { color: hsl(var(--pass)); }
+.text-fail { color: hsl(var(--fail)); }
+.text-blocked { color: hsl(var(--blocked)); }
+.text-skipped { color: hsl(var(--skipped)); }
+.bg-pass { background-color: hsl(var(--pass)); }
+.bg-fail { background-color: hsl(var(--fail)); }
+.bg-blocked { background-color: hsl(var(--blocked)); }
+.bg-skipped { background-color: hsl(var(--skipped)); }
+
+/* Command palette overlay */
+.cmd-overlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Slide-in panel */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes fadeInScale {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.animate-slide-in-right { animation: slideInRight 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.animate-fade-in-scale  { animation: fadeInScale 0.15s cubic-bezier(0.4, 0, 0.2, 1); }

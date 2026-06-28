@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --prefix=./apps/web",
-  "outputDirectory": "apps/web/.next",
   "functions": {
     "apps/web/src/**/*.ts": {
       "memory": 1024,

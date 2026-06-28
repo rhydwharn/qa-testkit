@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd apps/web && pnpm install && pnpm run build",
+  "buildCommand": "npm install && npm run build --workspace=web",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "pnpm install",
+  "installCommand": "npm install",
   "functions": {
     "apps/web/src/**/*.ts": {
       "memory": 1024,

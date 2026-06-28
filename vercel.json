@@ -3,11 +3,6 @@
   "buildCommand": "cd apps/web && pnpm install && pnpm run build",
   "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
-  },
   "functions": {
     "apps/web/src/**/*.ts": {
       "memory": 1024,

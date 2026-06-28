@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd apps/web && npm run build",
+  "buildCommand": "npm run build --prefix=./apps/web",
   "outputDirectory": "apps/web/.next",
   "functions": {
     "apps/web/src/**/*.ts": {

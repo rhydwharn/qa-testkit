@@ -439,7 +439,7 @@ export default function CyclesPage() {
                         checked={isSelected}
                         onChange={(e) => {
                           e.stopPropagation();
-                          toggleSelect(cycle.id, index, e.shiftKey);
+                          toggleSelect(cycle.id, index, (e.nativeEvent as MouseEvent).shiftKey);
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className="h-3.5 w-3.5 rounded accent-primary"

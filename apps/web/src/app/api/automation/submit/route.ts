@@ -121,20 +121,24 @@ export async function POST(req: NextRequest) {
     // If no match yet, try extracting key from title tags using configurable pattern
     // Pattern can be customized via TEST_CASE_TAG_PATTERN env var (e.g., "\\[([A-Z0-9]+-\\d+)\\]")
     // Default: [TC-123], [PROJ-456], etc. (brackets required)
+    let tagWasExtracted = false;
     if (!testCase && result.title) {
       const pattern = process.env.TEST_CASE_TAG_PATTERN || "\\[([A-Z0-9]+-\\d+)\\]";
       const tagMatch = result.title.match(new RegExp(pattern));
       if (tagMatch && tagMatch[1]) {
+        tagWasExtracted = true;
         extractedKey = tagMatch[1];
         testCase = await prisma.testCase.findFirst({
           where: { projectId: d.projectId, key: extractedKey },
           include: { versions: { where: { isLatest: true }, take: 1 } },
         });
+        // If tag was extracted but no exact match found, DON'T fall back to fuzzy match
+        // Mark for external creation with the extracted key
       }
     }
 
-    // Fallback to fuzzy title match if tag extraction didn't work
-    if (!testCase && result.title) {
+    // Fallback to fuzzy title match ONLY if no tag was extracted
+    if (!testCase && result.title && !tagWasExtracted) {
       // Remove tags from title for cleaner fuzzy matching
       const cleanTitle = result.title.replace(/\s*\[[^\]]+\]\s*/g, "").trim();
       testCase = await prisma.testCase.findFirst({
@@ -147,8 +151,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!testCase) {
-      // Test case not found, but still record the result
-      // Create a placeholder test case to track unmatched tests
+      // Test case not found, create a placeholder external test case
       const unmatchedKey = extractedKey ?? result.testCaseKey ?? `EXTERNAL-${d.results.indexOf(result) + 1}`;
       const unmatchedSummary = result.title ?? `External test: ${unmatchedKey}`;
 
@@ -265,6 +268,28 @@ export async function POST(req: NextRequest) {
           const stepError = execStatus !== "PASS" ? (result.error ?? null) : null;
           await upsertStepExecution(execution.id, testSteps[i].id, stepStatus, stepError, null);
         }
+      }
+    }
+
+    // ── Handle screenshot attachment ───────────────────────────────────────────
+    if (result.screenshot && execution) {
+      try {
+        // Upload screenshot as attachment
+        const fd = new FormData();
+        fd.append("file", result.screenshot); // base64 or URL
+        fd.append("testCaseExecutionId", execution.id);
+        fd.append("description", `Screenshot from ${framework} automation run`);
+
+        await fetch(`/api/attachments`, {
+          method: "POST",
+          body: fd,
+          headers: { "Authorization": `Bearer ${process.env.AUTOMATION_API_KEY}` },
+        }).catch(() => {
+          // Silently fail on screenshot upload - don't block test result submission
+          console.warn(`[automation/submit] Failed to upload screenshot for execution ${execution.id}`);
+        });
+      } catch (e) {
+        console.warn(`[automation/submit] Screenshot handling error:`, e);
       }
     }
 

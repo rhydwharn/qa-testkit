@@ -246,7 +246,11 @@ QATM_CYCLE_NAME=My Automation Run`} />
               </div>
               <div>
                 <span className="font-medium text-foreground block mb-1">Mocha / Standard:</span>
-                Steps are auto-derived — PASS → all steps pass; FAIL → last step fails with the error message.
+                <div className="space-y-1">
+                  <div>Optional: Include <code className="text-xs bg-muted px-1 py-0.5 rounded">failingStepIndex</code> (0-based) to mark exact step that failed.</div>
+                  <div>Without it: PASS → all steps pass; FAIL → all steps marked as failed.</div>
+                  <div>With it: Steps before the failure marked PASS, the failing step shows the error, steps after marked NOT_EXECUTED.</div>
+                </div>
               </div>
               <div>
                 <span className="font-medium text-foreground block mb-1">REST API:</span>
@@ -417,6 +421,8 @@ npx bddgen && npx playwright test`} />
         "status": "fail",
         "duration": 567,
         "error": "Expected true but got false",
+        "failingStepIndex": 1,
+        "screenshot": "data:image/png;base64,...",
         "steps": [
           { "stepIndex": 0, "status": "pass" },
           { "stepIndex": 1, "status": "fail", "actualResult": "Expected true but got false" }

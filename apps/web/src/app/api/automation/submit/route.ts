@@ -149,11 +149,11 @@ export async function POST(req: NextRequest) {
     }
 
     // If no match yet, try extracting key from title tags using configurable pattern
-    // Pattern can be customized via TEST_CASE_TAG_PATTERN env var (e.g., "\\[([A-Z0-9]+-\\d+)\\]")
-    // Default: [TC-123], [PROJ-456], etc. (brackets required)
+    // Pattern can be customized via TEST_CASE_TAG_PATTERN env var
+    // Default: matches formats like [XAP-TC-1], [QAR-TC-1], [XP-TC-1], etc.
     let tagWasExtracted = false;
     if (!testCase && result.title) {
-      const pattern = process.env.TEST_CASE_TAG_PATTERN || "\\[([A-Z0-9]+-\\d+)\\]";
+      const pattern = process.env.TEST_CASE_TAG_PATTERN || "\\[([A-Z0-9]+-[A-Za-z]+-\\d+)\\]";
       console.log(`[automation/submit] Trying tag extraction with pattern: ${pattern}`);
       const tagMatch = result.title.match(new RegExp(pattern));
       if (tagMatch && tagMatch[1]) {

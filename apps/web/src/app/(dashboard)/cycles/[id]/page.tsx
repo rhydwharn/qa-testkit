@@ -52,6 +52,11 @@ interface StepExecution {
   actualResult?: string;
   comment?: string;
   testStepId: string;
+  testStep?: {
+    id: string;
+    order: number;
+    stepDetails: string;
+  };
 }
 
 interface Attachment {
@@ -534,7 +539,8 @@ function ExecListItem({
   onClick: () => void;
   onUpdateStatus: (id: string, s: ExecStatus) => void;
 }) {
-  const tc = exec.testCaseVersion.testCase;
+  const tc = exec.testCaseVersion?.testCase;
+  const isExternal = !tc || tc.isExternal || exec.externalTestKey;
   return (
     <div data-testid="cycles-detail-page"
       onClick={onClick}
@@ -548,15 +554,15 @@ function ExecListItem({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-[11px] font-mono text-blue-600 font-semibold leading-none">{tc.key}</span>
-          {tc.key.startsWith("EXTERNAL") && (
+          <span className="text-[11px] font-mono text-blue-600 font-semibold leading-none">{tc?.key || exec.externalTestKey || "External"}</span>
+          {isExternal && (
             <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">External</span>
           )}
-          {exec.testCaseVersion.versionNumber != null && (
+          {exec.testCaseVersion?.versionNumber != null && (
             <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded">v{exec.testCaseVersion.versionNumber}</span>
           )}
         </div>
-        <p className="text-xs leading-snug line-clamp-2 text-foreground">{tc.summary}</p>
+        <p className="text-xs leading-snug line-clamp-2 text-foreground">{tc?.summary || "External automation result"}</p>
       </div>
 
       {/* Status badge + menu */}
@@ -1104,9 +1110,23 @@ function ExecutionRightPanel({
   onCreateJiraBug: (execId: string, summary: string) => Promise<void>;
   onStartExecution: (execId: string) => void;
 }) {
-  const tc = exec.testCaseVersion.testCase;
-  const version = exec.testCaseVersion.versionNumber;
-  const steps = exec.testCaseVersion.steps;
+  const tc = exec.testCaseVersion?.testCase;
+  const version = exec.testCaseVersion?.versionNumber;
+  // For regular cases, get steps from testCaseVersion.steps
+  // For external cases, construct steps from stepExecutions with their testStep data
+  const steps = exec.testCaseVersion?.steps ??
+    exec.stepExecutions
+      .filter(se => se.testStep)
+      .map(se => ({
+        id: se.testStep!.id,
+        order: se.testStep!.order,
+        stepDetails: se.testStep!.stepDetails,
+        expectedResult: null as any,
+        testData: null,
+        version: null as any,
+        stepExecutions: null as any,
+      }))
+      .sort((a, b) => a.order - b.order) ?? [];
   const executedByName = exec.executedBy?.name ?? exec.assignee?.name ?? exec.assignee?.email;
   const executedAt = formatDate(exec.executedAt ?? undefined);
 
@@ -1116,7 +1136,7 @@ function ExecutionRightPanel({
       <div className="px-5 pt-3 pb-2.5 border-b border-border shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-mono font-bold text-blue-600 shrink-0">{tc.key}</span>
+            <span className="text-xs font-mono font-bold text-blue-600 shrink-0">{tc?.key || exec.externalTestKey || "External"}</span>
             {version != null && (
               <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono shrink-0">v{version}</span>
             )}
@@ -1131,7 +1151,7 @@ function ExecutionRightPanel({
             START A NEW TEST EXECUTION
           </Button>
         </div>
-        <p className="text-sm font-semibold mt-1 line-clamp-2">{tc.summary}</p>
+        <p className="text-sm font-semibold mt-1 line-clamp-2">{tc?.summary || "External automation result"}</p>
       </div>
 
       {/* Tabs */}
@@ -1218,7 +1238,7 @@ function ExecTab({
   onUpdateStepStatus: (execId: string, stepId: string, status: ExecStatus) => Promise<void>;
   onCreateJiraBug: (execId: string, summary: string) => Promise<void>;
 }) {
-  const tc = exec.testCaseVersion.testCase;
+  const tc = exec.testCaseVersion?.testCase;
   const [subTab, setSubTab] = useState<ExecSubTab>("steps");
 
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
@@ -1291,7 +1311,7 @@ function ExecTab({
           <div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">Execution Result</p>
             <div className="flex items-center gap-1.5">
-              {(["BLOCKED", "FAIL", "PASS"] as ExecStatus[]).map((s) => (
+              {(["PASS", "FAIL", "BLOCKED", "NOT_RUN"] as ExecStatus[]).map((s) => (
                 <button
                   key={s}
                   onClick={() => onUpdateStatus(exec.id, s)}
@@ -1391,7 +1411,7 @@ function ExecTab({
                 {d.jiraSummary && <span className="text-muted-foreground">— {d.jiraSummary}</span>}
               </span>
             ))}
-            {(exec.status === "FAIL" || exec.status === "BLOCKED") && (
+            {(exec.status === "FAIL" || exec.status === "BLOCKED") && tc && (
               <button
                 onClick={() => onCreateJiraBug(exec.id, tc.summary)}
                 disabled={creatingBug === exec.id}
@@ -1542,7 +1562,7 @@ function StepsContent({
   onUpdateStepStatus: (execId: string, stepId: string, status: ExecStatus) => Promise<void>;
 }) {
   const [preconditionOpen, setPreconditionOpen] = useState(true);
-  const tc = exec.testCaseVersion.testCase;
+  const tc = exec.testCaseVersion?.testCase;
 
   if (steps.length === 0) {
     return (
@@ -1555,7 +1575,7 @@ function StepsContent({
   return (
     <div data-testid="cycles-detail-page" className="px-5 py-4 space-y-3">
       {/* Precondition */}
-      {tc.description && (
+      {tc?.description && (
         <div className="border border-border rounded-lg overflow-hidden">
           <button
             className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -1593,7 +1613,7 @@ function StepsContent({
                 <span className="text-sm font-semibold">Step {idx + 1}</span>
                 <div className="flex items-center gap-1.5">
                   {/* Status color squares */}
-                  {(["BLOCKED", "FAIL", "PASS"] as ExecStatus[]).map((s) => (
+                  {(["PASS", "FAIL", "BLOCKED", "NOT_RUN"] as ExecStatus[]).map((s) => (
                     <button
                       key={s}
                       onClick={() => onUpdateStepStatus(exec.id, step.id, s)}
@@ -1679,21 +1699,21 @@ function DetailsTab({
   exec: TestCaseExecution;
   steps: TestCaseExecution["testCaseVersion"]["steps"];
 }) {
-  const tc = exec.testCaseVersion.testCase;
+  const tc = exec.testCaseVersion?.testCase;
 
   return (
     <div data-testid="cycles-detail-page" className="px-5 py-5 space-y-5">
       <div>
         <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">Summary</p>
-        <p className="text-sm">{tc.summary}</p>
+        <p className="text-sm">{tc?.summary || "External automation result"}</p>
       </div>
-      {tc.description && (
+      {tc?.description && (
         <div>
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">Description / Precondition</p>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{tc.description}</p>
         </div>
       )}
-      {tc.priority && (
+      {tc?.priority && (
         <div>
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">Priority</p>
           <span
@@ -1769,7 +1789,7 @@ function AddTestCasesPanel({
 
   const filtered = testCases.filter((tc) => {
     const matchFolder = selectedFolderId ? tc.folderId === selectedFolderId : true;
-    const matchQuery = !query || tc.summary.toLowerCase().includes(query.toLowerCase()) || tc.key.toLowerCase().includes(query.toLowerCase());
+    const matchQuery = !query || (tc?.summary || "").toLowerCase().includes(query.toLowerCase()) || (tc?.key || "").toLowerCase().includes(query.toLowerCase());
     return matchFolder && matchQuery && tc.status !== "DEPRECATED";
   });
 
@@ -1878,8 +1898,8 @@ function AddTestCasesPanel({
                       onChange={(e) => toggleSelect(tc.id, idx, e.nativeEvent instanceof MouseEvent && (e.nativeEvent as MouseEvent).shiftKey)}
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-mono font-bold text-blue-600 mr-2">{tc.key}</span>
-                      <span className="text-xs truncate">{tc.summary}</span>
+                      <span className="text-xs font-mono font-bold text-blue-600 mr-2">{tc?.key || exec.externalTestKey || "External"}</span>
+                      <span className="text-xs truncate">{tc?.summary || "External automation result"}</span>
                     </div>
                   </label>
                 ))

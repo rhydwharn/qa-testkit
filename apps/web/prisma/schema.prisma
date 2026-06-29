@@ -362,6 +362,7 @@ model TestCase {
   description String?      @db.Text
   status      CaseStatus   @default(DRAFT)
   isArchived  Boolean      @default(false)
+  isExternal  Boolean      @default(false) // true if auto-created from unmatched automation results
   priorityId  String?
   folderId    String?
   projectId   String
@@ -383,6 +384,7 @@ model TestCase {
   @@unique([projectId, key])
   @@index([projectId, status])
   @@index([projectId, isArchived])
+  @@index([isExternal])
 }
 
 enum CaseStatus {
@@ -500,8 +502,9 @@ model TestCycleCase {
 model TestCaseExecution {
   id                String          @id @default(cuid())
   testCycleId       String
-  testCaseId        String
-  testCaseVersionId String
+  testCaseId        String?         // nullable for external/unmatched automation results
+  testCaseVersionId String?         // nullable for external/unmatched automation results
+  externalTestKey   String?         // stores the requested test case key for unmatched results
   status            ExecutionStatus @default(NOT_RUN)
   assigneeId        String?
   executionMethod   String?         @default("MANUAL")  // MANUAL, CYPRESS, PLAYWRIGHT, JEST, SELENIUM, TESTNG
@@ -514,7 +517,7 @@ model TestCaseExecution {
   updatedAt         DateTime        @updatedAt
 
   testCycle       TestCycle        @relation(fields: [testCycleId], references: [id], onDelete: Cascade)
-  testCaseVersion TestCaseVersion  @relation(fields: [testCaseVersionId], references: [id])
+  testCaseVersion TestCaseVersion? @relation(fields: [testCaseVersionId], references: [id])
   assignee        User?            @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   stepExecutions  TestStepExecution[]
   defects         DefectLink[]

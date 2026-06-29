@@ -37,7 +37,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             },
           },
           assignee: { select: { id: true, name: true, email: true, image: true } },
-          stepExecutions: { orderBy: { id: "asc" } },
+          stepExecutions: {
+            orderBy: { id: "asc" },
+            include: { testStep: { select: { id: true, order: true, stepDetails: true } } },
+          },
           defects: true,
           attachments: { orderBy: { createdAt: "asc" } },
           _count: { select: { attachments: true } },

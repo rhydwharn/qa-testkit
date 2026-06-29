@@ -6,6 +6,7 @@ import { z } from "zod";
 const stepResultSchema = z.object({
   stepIndex: z.number().int().min(0),  // 0-based; maps to TestStep ordered by `order` asc
   status: z.enum(["pass", "fail", "skipped", "blocked"]),
+  name: z.string().optional(),         // step description from automation framework
   actualResult: z.string().optional(),
   comment: z.string().optional(),
 });
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       });
       if (testCase) {
         extractedKey = result.testCaseKey;
-        console.log(`[automation/submit] Found by testCaseKey: ${result.testCaseKey}`);
+        console.log(`[automation/submit] Found by testCaseKey: ${result.testCaseKey}, isExternal=${testCase.isExternal}`);
       } else {
         console.log(`[automation/submit] Not found by testCaseKey: ${result.testCaseKey}`);
       }
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
           include: { versions: { where: { isLatest: true }, take: 1 } },
         });
         if (testCase) {
-          console.log(`[automation/submit] Found by extracted tag: ${extractedKey}`);
+          console.log(`[automation/submit] Found by extracted tag: ${extractedKey}, isExternal=${testCase.isExternal}`);
         } else {
           console.log(`[automation/submit] Not found by extracted tag: ${extractedKey}, will create external`);
         }
@@ -189,49 +190,105 @@ export async function POST(req: NextRequest) {
         include: { versions: { where: { isLatest: true }, take: 1 } },
       });
       if (testCase) {
-        console.log(`[automation/submit] Found by fuzzy match: ${testCase.key}`);
+        console.log(`[automation/submit] Found by fuzzy match: ${testCase.key}, isExternal=${testCase.isExternal}`);
       } else {
         console.log(`[automation/submit] Not found by fuzzy match`);
       }
     }
 
     if (!testCase) {
-      // Test case not found, create a placeholder external test case
-      const unmatchedKey = extractedKey ?? result.testCaseKey ?? `EXTERNAL-${d.results.indexOf(result) + 1}`;
-      const unmatchedSummary = result.title ?? `External test: ${unmatchedKey}`;
+      // Test case not found - create execution record but with null testCaseId (external/unmatched)
+      const externalKey = extractedKey ?? result.testCaseKey ?? `UNKNOWN-${d.results.indexOf(result) + 1}`;
+      console.log(`[automation/submit] Test case NOT found: ${externalKey}, creating external execution (no test case DB record)`);
+      unmatched.push(externalKey);
 
-      console.log(`[automation/submit] Creating external test case with key: ${unmatchedKey}`);
-
-      const newTestCase = await prisma.testCase.create({
+      // Create execution for external/unmatched result
+      const execution = await prisma.testCaseExecution.create({
         data: {
-          projectId: d.projectId,
-          key: unmatchedKey,
-          summary: unmatchedSummary,
-          description: "Automatically created for unmatched automation result",
-          status: "READY",
+          testCycleId: cycleId,
+          testCaseId: null,
+          testCaseVersionId: null,
+          externalTestKey: externalKey,
+          status: STATUS_MAP[result.status] ?? "NOT_RUN",
+          duration: result.duration,
+          actualResult: result.error ?? null,
+          executedAt: new Date(),
+          executionMethod: frameworkUpper,
         },
       });
 
-      // Create initial version
-      const version = await prisma.testCaseVersion.create({
-        data: {
-          testCaseId: newTestCase.id,
-          versionNo: 1,
-          isLatest: true,
-        },
-      });
+      console.log(`[automation/submit] External execution created: ${execution.id} for key ${externalKey}`);
 
-      testCase = {
-        ...newTestCase,
-        versions: [version],
-      } as any;
+      // ── Process steps for external execution ───────────────────────────────────────────────────
+      // For external test cases with steps, create temporary test case/version to store step results
+      if (result.steps && result.steps.length > 0) {
+        console.log(`[automation/submit] External case ${externalKey}: processing ${result.steps.length} steps`);
 
-      unmatched.push(unmatchedKey);
-      console.log(`[automation/submit] External test case created: ${unmatchedKey}, unmatched array: [${unmatched.join(", ")}]`);
+        // Upsert a temporary external TestCase to hold the step records
+        const tempCaseKey = `EXT-${externalKey.replace(/[^A-Z0-9]/g, '')}`;
+        const tempCase = await prisma.testCase.upsert({
+          where: { projectId_key: { projectId: d.projectId, key: tempCaseKey } },
+          create: {
+            key: tempCaseKey,
+            summary: `External: ${externalKey}`,
+            projectId: d.projectId,
+            isExternal: true,
+          },
+          update: {},
+        });
+
+        // Upsert a temporary version for this external case
+        const tempVersion = await prisma.testCaseVersion.upsert({
+          where: { testCaseId_versionNo: { testCaseId: tempCase.id, versionNo: 1 } },
+          create: {
+            testCaseId: tempCase.id,
+            versionNo: 1,
+            isLatest: true,
+          },
+          update: { isLatest: true },
+        });
+
+        // Create test steps for each step in the result
+        const tempSteps = [];
+        for (let i = 0; i < result.steps.length; i++) {
+          const step = result.steps[i];
+          const tempStep = await prisma.testStep.create({
+            data: {
+              versionId: tempVersion.id,
+              order: i + 1,
+              stepDetails: step.name || `Step ${i + 1}`,
+              expectedResult: '',
+            },
+          });
+          tempSteps.push(tempStep);
+        }
+
+        // Process the step results
+        for (const stepResult of result.steps) {
+          const tempStep = tempSteps[stepResult.stepIndex];
+          if (!tempStep) continue;
+          console.log(`[automation/submit] External step ${stepResult.stepIndex}: status=${stepResult.status}`);
+          await upsertStepExecution(
+            execution.id,
+            tempStep.id,
+            STATUS_MAP[stepResult.status] ?? "NOT_RUN",
+            stepResult.actualResult ?? null,
+            stepResult.comment ?? null,
+          );
+        }
+      }
+
+      continue;
     }
 
+    // Test case found - continue with normal execution
+    console.log(`[automation/submit] Test case found: ${testCase.key}, processing execution`);
+    matched.push(testCase.key);
     const latestVersion = testCase.versions[0];
-    if (!latestVersion) continue;
+    if (!latestVersion) {
+      console.log(`[automation/submit] No latest version found, skipping this test case`);
+      continue;
+    }
 
     // Find or create execution
     let execution = await prisma.testCaseExecution.findFirst({
@@ -274,6 +331,24 @@ export async function POST(req: NextRequest) {
     });
 
     console.log(`[automation/submit] Processing test case: ${testCase.key}, testSteps.length=${testSteps.length}, result.steps?.length=${result.steps?.length}, failingStepIndex=${result.failingStepIndex}`);
+
+    // Auto-create test steps if they don't exist but step data is provided
+    if (testSteps.length === 0 && result.steps?.length) {
+      console.log(`[automation/submit] Auto-creating ${result.steps.length} test steps for ${testCase.key}`);
+      for (let i = 0; i < result.steps.length; i++) {
+        const step = result.steps[i];
+        const newStep = await prisma.testStep.create({
+          data: {
+            versionId: latestVersion.id,
+            order: i + 1,
+            stepDetails: step.name || `Step ${i + 1}`,
+            expectedResult: '',
+          },
+        });
+        testSteps.push(newStep);
+      }
+      console.log(`[automation/submit] Created ${testSteps.length} test steps`);
+    }
 
     if (testSteps.length > 0) {
       if (result.steps?.length) {
@@ -351,15 +426,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    matched.push(testCase.key);
+    // Track as matched or unmatched based on whether it's an external test case
   }
 
   console.log(`[automation/submit] ===== PROCESSING COMPLETE =====`);
-  console.log(`[automation/submit] Matched: ${matched.join(", ")}`);
-  console.log(`[automation/submit] Unmatched/External: ${unmatched.join(", ")}`);
+  console.log(`[automation/submit] Matched array final: [${matched.join(", ")}]`);
+  console.log(`[automation/submit] Unmatched array final: [${unmatched.join(", ")}]`);
   console.log(`[automation/submit] Total: ${d.results.length}, Passed: ${passed}, Failed: ${failed}, Skipped: ${skipped}`);
 
   // Record the automation run
+  // Store unmatched results in rawReport for later retrieval on cycles page
+  const reportData = {
+    ...d,
+    unmatchedKeys: unmatched,
+    matchedKeys: matched,
+  };
+
   const run = await prisma.automationRun.create({
     data: {
       projectId: d.projectId,
@@ -370,7 +452,7 @@ export async function POST(req: NextRequest) {
       passed,
       failed,
       skipped,
-      rawReport: d as object,
+      rawReport: reportData as object,
     },
   });
 

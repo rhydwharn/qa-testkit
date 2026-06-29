@@ -85,10 +85,10 @@ export function Sidebar() {
       data-testid={TestIds.sidebar.root}
     >
       {/* Logo + toggle */}
-      <div className="flex items-center h-14 px-3 border-b border-sidebar-border shrink-0 gap-2" data-testid="sidebar-header">
-        {expanded ? (
-          <>
-            {/* Expanded: logo fills available space, or icon+name */}
+      {expanded ? (
+        // Expanded layout: logo/name on left, toggle on right
+        <div className="flex items-center justify-between h-14 px-3 border-b border-sidebar-border shrink-0 gap-2" data-testid="sidebar-header">
+          <div className="flex items-center min-w-0 flex-1 gap-2">
             {tenantLogoUrl && tenantLogoDisplay !== "NAME_ONLY" ? (
               <img
                 src={tenantLogoUrl}
@@ -96,9 +96,7 @@ export function Sidebar() {
                 className={cn(
                   "object-contain rounded shrink-0",
                   tenantLogoDisplay === "LOGO_ONLY"
-                    // Take the full header height, grow to fill width up to a cap
                     ? "h-9 w-auto max-w-[8rem] flex-1"
-                    // Side-by-side with name: fixed square
                     : "h-9 w-9 min-w-[2.25rem]"
                 )}
                 data-testid="sidebar-logo"
@@ -117,36 +115,41 @@ export function Sidebar() {
                 {tenantName ?? "QA Testkit"}
               </span>
             )}
-          </>
-        ) : (
-          /* Collapsed: centered icon or logo */
-          <div className="flex flex-1 items-center justify-center" data-testid="sidebar-logo-collapsed">
-            {tenantLogoUrl && tenantLogoDisplay !== "NAME_ONLY" ? (
-              <img
-                src={tenantLogoUrl}
-                alt={tenantName ?? "Logo"}
-                className="h-8 w-8 object-contain rounded"
-                data-testid="sidebar-logo-collapsed-img"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary" data-testid="sidebar-logo-collapsed-fallback">
-                <CheckSquare className="h-4 w-4 text-white" />
-              </div>
-            )}
           </div>
-        )}
-        <button
-          onClick={toggle}
-          className="text-sidebar-fg hover:text-white hover:bg-sidebar-hover rounded p-0.5 transition-colors shrink-0 relative z-40"
-          title={expanded ? "Collapse sidebar" : "Expand sidebar"}
-          data-testid="sidebar-toggle-button"
-        >
-          {expanded
-            ? <ChevronsLeft className="h-4 w-4" />
-            : <ChevronsRight className="h-4 w-4" />
-          }
-        </button>
-      </div>
+          <button
+            onClick={toggle}
+            className="text-sidebar-fg hover:text-white hover:bg-sidebar-hover rounded p-0.5 transition-colors shrink-0"
+            title="Collapse sidebar"
+            data-testid="sidebar-toggle-button"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        // Collapsed layout: icon and toggle side-by-side, centered
+        <div className="flex items-center justify-center h-14 px-2 border-b border-sidebar-border shrink-0 gap-1" data-testid="sidebar-header">
+          {tenantLogoUrl && tenantLogoDisplay !== "NAME_ONLY" ? (
+            <img
+              src={tenantLogoUrl}
+              alt={tenantName ?? "Logo"}
+              className="h-8 w-8 object-contain rounded shrink-0"
+              data-testid="sidebar-logo-collapsed-img"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary shrink-0" data-testid="sidebar-logo-collapsed-fallback">
+              <CheckSquare className="h-4 w-4 text-white" />
+            </div>
+          )}
+          <button
+            onClick={toggle}
+            className="text-sidebar-fg hover:text-white hover:bg-sidebar-hover rounded p-0.5 transition-colors shrink-0"
+            title="Expand sidebar"
+            data-testid="sidebar-toggle-button"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Project switcher */}
       <div className="px-2 py-2 border-b border-sidebar-border shrink-0" data-testid="sidebar-project-switcher">

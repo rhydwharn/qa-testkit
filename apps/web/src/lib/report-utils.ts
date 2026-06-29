@@ -190,20 +190,21 @@ export function buildQueryString(params: ReportParameters): string {
  *
  * @param rawData - Raw API response
  * @param reportType - Type of report
+ * @param projectId - Project ID
  * @returns Normalized ReportData
  *
  * @example
  * ```typescript
- * const normalized = normalizeReportData(apiResponse, "tc-by-status");
+ * const normalized = normalizeReportData(apiResponse, "tc-by-status", "proj-123");
  * ```
  */
-export function normalizeReportData(rawData: any, reportType: ReportType): ReportData {
+export function normalizeReportData(rawData: any, reportType: ReportType, projectId: string): ReportData {
   if (!rawData) {
     return {
       type: reportType,
       title: "",
       generatedAt: new Date().toISOString(),
-      parameters: { projectId: "", reportType },
+      parameters: { projectId, reportType },
       rows: [],
       error: "No data returned from server",
     };
@@ -217,7 +218,7 @@ export function normalizeReportData(rawData: any, reportType: ReportType): Repor
     type: reportType,
     title: getReportMetadata(reportType)?.title || "",
     generatedAt: new Date().toISOString(),
-    parameters: { reportType },
+    parameters: { projectId, reportType },
     rows,
     summary,
   };

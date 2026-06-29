@@ -53,12 +53,13 @@ export default function OnboardingPage() {
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Redirect if already has tenant
+  // Redirect to dashboard only after onboarding is complete (step 3 with API key generated)
+  // Don't redirect during onboarding just because tenantId exists
   useEffect(() => {
-    if (session?.user?.tenantId) {
+    if (session?.user?.tenantId && step === 3 && generatedKey) {
       router.push("/dashboard");
     }
-  }, [session, router]);
+  }, [session?.user?.tenantId, step, generatedKey, router]);
 
   // Auto-generate slug from workspace name
   useEffect(() => {

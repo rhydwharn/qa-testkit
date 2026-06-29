@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { submittedAt: "desc" },
-      take: 10,
+      take: 3,
     });
 
     const formatted = runs.map((run) => ({

@@ -1467,31 +1467,22 @@ function ExecTab({
                 const displayUrl = isBase64 ? `data:${att.mimeType};base64,${att.storageKey}` : att.storageKey;
 
                 return (
-                  <div key={att.id} className="space-y-2 rounded-lg border border-border p-3 hover:bg-muted/10">
+                  <div key={att.id} className="space-y-2 rounded-lg border border-border p-3">
+                    {/* Header with file info */}
                     <div className="flex items-center gap-3">
                       <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{att.fileName}</p>
                         <p className="text-xs text-muted-foreground">{(att.fileSize / 1024).toFixed(1)} KB</p>
                       </div>
-                      {isScreenshot && (
-                        <a
-                          href={displayUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-blue-600 hover:underline shrink-0"
-                        >
-                          View
-                        </a>
-                      )}
                     </div>
                     {/* Display screenshot preview if it's an image */}
                     {isScreenshot && displayUrl && (
-                      <div className="rounded-md overflow-hidden border border-border bg-muted/20">
+                      <div className="rounded-md overflow-hidden border border-border bg-gray-50">
                         <img
                           src={displayUrl}
                           alt={att.fileName}
-                          className="max-w-full h-auto max-h-96 object-contain"
+                          className="w-full h-auto max-h-[500px] object-contain"
                         />
                       </div>
                     )}

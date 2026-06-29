@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         include: {
           testCaseVersion: {
             include: {
-              testCase: { select: { id: true, key: true, summary: true, priority: true } },
+              testCase: { select: { id: true, key: true, summary: true, priority: true, isExternal: true } },
               steps: { orderBy: { order: "asc" } },
             },
           },

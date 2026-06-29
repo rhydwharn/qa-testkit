@@ -86,6 +86,7 @@ interface TestCaseExecution {
       summary: string;
       description?: string;
       priority?: { name: string; color: string } | null;
+      isExternal?: boolean;
     };
     steps: {
       id: string;

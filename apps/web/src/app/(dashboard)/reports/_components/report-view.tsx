@@ -631,14 +631,14 @@ export function ReportView({ reportType, projectId }: ReportViewProps) {
       )}
 
       {/* Results */}
-      {generated && !loading && <Results reportType={reportType} data={data} />}
+      {generated && !loading && <Results reportType={reportType} projectId={projectId} data={data} />}
     </div>
   );
 }
 
 // ─── Results dispatcher ───────────────────────────────────────────────────────
 
-function Results({ reportType, data }: { reportType: ReportType; data: unknown }) {
+function Results({ reportType, projectId, data }: { reportType: ReportType; projectId: string; data: unknown }) {
   const [exporting, setExporting] = useState(false);
 
   async function handleExport(format: 'csv' | 'pdf' | 'json') {
@@ -659,7 +659,7 @@ function Results({ reportType, data }: { reportType: ReportType; data: unknown }
           type: reportType,
           title: reportType.replace(/-/g, ' '),
           generatedAt: new Date().toISOString(),
-          parameters: {},
+          parameters: { projectId, reportType },
           rows,
         },
         format,

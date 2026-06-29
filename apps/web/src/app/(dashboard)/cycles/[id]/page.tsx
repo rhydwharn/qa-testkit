@@ -1920,7 +1920,7 @@ function AddTestCasesPanel({
                       onChange={(e) => toggleSelect(tc.id, idx, e.nativeEvent instanceof MouseEvent && (e.nativeEvent as MouseEvent).shiftKey)}
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-mono font-bold text-blue-600 mr-2">{tc?.key || exec.externalTestKey || "External"}</span>
+                      <span className="text-xs font-mono font-bold text-blue-600 mr-2">{tc?.key || "External"}</span>
                       <span className="text-xs truncate">{tc?.summary || "External automation result"}</span>
                     </div>
                   </label>

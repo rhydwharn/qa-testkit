@@ -69,6 +69,30 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
 
+  // DEBUG: Log the full payload for debugging
+  console.log("[automation/submit] ===== FULL PAYLOAD RECEIVED =====");
+  console.log("[automation/submit] projectId:", d.projectId);
+  console.log("[automation/submit] framework:", d.framework);
+  console.log("[automation/submit] cycleName:", d.cycleName);
+  console.log("[automation/submit] Number of results:", d.results.length);
+  d.results.forEach((result, idx) => {
+    console.log(`[automation/submit] Result ${idx}:`, {
+      testCaseKey: result.testCaseKey,
+      title: result.title,
+      status: result.status,
+      error: result.error?.substring(0, 100),
+      failingStepIndex: result.failingStepIndex,
+      hasScreenshot: !!result.screenshot,
+      stepsCount: result.steps?.length ?? 0,
+      steps: result.steps?.map((s) => ({
+        stepIndex: s.stepIndex,
+        status: s.status,
+        actualResult: s.actualResult?.substring(0, 100),
+      })) ?? [],
+    });
+  });
+  console.log("[automation/submit] ===== END PAYLOAD =====");
+
   // Normalize framework: lowercase, hyphens → underscores (e.g. "cypress-bdd" → "cypress_bdd")
   const framework = d.framework.toLowerCase().replace(/-/g, "_");
   const frameworkUpper = framework.toUpperCase();
@@ -103,18 +127,24 @@ export async function POST(req: NextRequest) {
   const skipped = d.results.filter((r) => r.status === "skipped").length;
 
   for (const result of d.results) {
+    console.log(`[automation/submit] Processing result: title="${result.title}", testCaseKey="${result.testCaseKey}", status="${result.status}"`);
+
     // Find test case by key or tag-based matching
     let testCase = null;
     let extractedKey: string | null = null;
 
     // First, try explicit testCaseKey if provided
     if (result.testCaseKey) {
+      console.log(`[automation/submit] Trying explicit testCaseKey: ${result.testCaseKey}`);
       testCase = await prisma.testCase.findFirst({
         where: { projectId: d.projectId, key: result.testCaseKey },
         include: { versions: { where: { isLatest: true }, take: 1 } },
       });
       if (testCase) {
         extractedKey = result.testCaseKey;
+        console.log(`[automation/submit] Found by testCaseKey: ${result.testCaseKey}`);
+      } else {
+        console.log(`[automation/submit] Not found by testCaseKey: ${result.testCaseKey}`);
       }
     }
 
@@ -124,16 +154,25 @@ export async function POST(req: NextRequest) {
     let tagWasExtracted = false;
     if (!testCase && result.title) {
       const pattern = process.env.TEST_CASE_TAG_PATTERN || "\\[([A-Z0-9]+-\\d+)\\]";
+      console.log(`[automation/submit] Trying tag extraction with pattern: ${pattern}`);
       const tagMatch = result.title.match(new RegExp(pattern));
       if (tagMatch && tagMatch[1]) {
         tagWasExtracted = true;
         extractedKey = tagMatch[1];
+        console.log(`[automation/submit] Extracted tag: ${extractedKey}`);
         testCase = await prisma.testCase.findFirst({
           where: { projectId: d.projectId, key: extractedKey },
           include: { versions: { where: { isLatest: true }, take: 1 } },
         });
+        if (testCase) {
+          console.log(`[automation/submit] Found by extracted tag: ${extractedKey}`);
+        } else {
+          console.log(`[automation/submit] Not found by extracted tag: ${extractedKey}, will create external`);
+        }
         // If tag was extracted but no exact match found, DON'T fall back to fuzzy match
         // Mark for external creation with the extracted key
+      } else {
+        console.log(`[automation/submit] No tag extracted from title: ${result.title}`);
       }
     }
 
@@ -141,6 +180,7 @@ export async function POST(req: NextRequest) {
     if (!testCase && result.title && !tagWasExtracted) {
       // Remove tags from title for cleaner fuzzy matching
       const cleanTitle = result.title.replace(/\s*\[[^\]]+\]\s*/g, "").trim();
+      console.log(`[automation/submit] Trying fuzzy match with: ${cleanTitle}`);
       testCase = await prisma.testCase.findFirst({
         where: {
           projectId: d.projectId,
@@ -148,12 +188,19 @@ export async function POST(req: NextRequest) {
         },
         include: { versions: { where: { isLatest: true }, take: 1 } },
       });
+      if (testCase) {
+        console.log(`[automation/submit] Found by fuzzy match: ${testCase.key}`);
+      } else {
+        console.log(`[automation/submit] Not found by fuzzy match`);
+      }
     }
 
     if (!testCase) {
       // Test case not found, create a placeholder external test case
       const unmatchedKey = extractedKey ?? result.testCaseKey ?? `EXTERNAL-${d.results.indexOf(result) + 1}`;
       const unmatchedSummary = result.title ?? `External test: ${unmatchedKey}`;
+
+      console.log(`[automation/submit] Creating external test case with key: ${unmatchedKey}`);
 
       const newTestCase = await prisma.testCase.create({
         data: {
@@ -180,6 +227,7 @@ export async function POST(req: NextRequest) {
       } as any;
 
       unmatched.push(unmatchedKey);
+      console.log(`[automation/submit] External test case created: ${unmatchedKey}, unmatched array: [${unmatched.join(", ")}]`);
     }
 
     const latestVersion = testCase.versions[0];
@@ -225,12 +273,16 @@ export async function POST(req: NextRequest) {
       orderBy: { order: "asc" },
     });
 
+    console.log(`[automation/submit] Processing test case: ${testCase.key}, testSteps.length=${testSteps.length}, result.steps?.length=${result.steps?.length}, failingStepIndex=${result.failingStepIndex}`);
+
     if (testSteps.length > 0) {
       if (result.steps?.length) {
         // BDD reporters send explicit step results
+        console.log(`[automation/submit] Using BDD path: processing ${result.steps.length} explicit step results`);
         for (const stepResult of result.steps) {
           const testStep = testSteps[stepResult.stepIndex];
           if (!testStep) continue;
+          console.log(`[automation/submit] Step ${stepResult.stepIndex}: status=${stepResult.status}, actualResult=${stepResult.actualResult?.substring(0, 50)}`);
           await upsertStepExecution(
             execution.id,
             testStep.id,
@@ -241,6 +293,7 @@ export async function POST(req: NextRequest) {
         }
       } else if (result.failingStepIndex !== undefined) {
         // Mocha with explicit failing step index: mark steps correctly based on where it failed
+        console.log(`[automation/submit] Using Mocha with failingStepIndex=${result.failingStepIndex}: marking steps before as PASS, step ${result.failingStepIndex} as ${execStatus}, steps after as NOT_RUN`);
         for (let i = 0; i < testSteps.length; i++) {
           let stepStatus: "NOT_RUN" | "IN_PROGRESS" | "PASS" | "FAIL" | "BLOCKED" | "SKIPPED" = "NOT_RUN";
           let stepError: string | null = null;
@@ -248,14 +301,17 @@ export async function POST(req: NextRequest) {
           if (i < result.failingStepIndex) {
             // Steps before failure: PASS
             stepStatus = "PASS";
+            console.log(`[automation/submit] Step ${i}: PASS (before failure)`);
           } else if (i === result.failingStepIndex) {
             // Step that failed
             stepStatus = execStatus;
             stepError = result.error ?? null;
+            console.log(`[automation/submit] Step ${i}: ${stepStatus} (failing step), error="${stepError?.substring(0, 50)}"`);
           } else {
             // Steps after failure: NOT_RUN with message explaining why
             stepStatus = "NOT_RUN";
             stepError = `Test execution stopped - Step ${result.failingStepIndex + 1} failed`;
+            console.log(`[automation/submit] Step ${i}: NOT_RUN (after failure), message="${stepError}"`);
           }
 
           await upsertStepExecution(execution.id, testSteps[i].id, stepStatus, stepError, null);
@@ -263,9 +319,11 @@ export async function POST(req: NextRequest) {
       } else {
         // Mocha without explicit step index: assume all pass if test passes, all fail if test fails
         // This is the fallback when failingStepIndex is not provided
+        console.log(`[automation/submit] Using fallback path (no failingStepIndex): all steps marked as ${execStatus}`);
         for (let i = 0; i < testSteps.length; i++) {
           const stepStatus = execStatus === "PASS" ? "PASS" : "FAIL";
           const stepError = execStatus !== "PASS" ? (result.error ?? null) : null;
+          console.log(`[automation/submit] Step ${i}: ${stepStatus}, error="${stepError?.substring(0, 50)}"`);
           await upsertStepExecution(execution.id, testSteps[i].id, stepStatus, stepError, null);
         }
       }
@@ -295,6 +353,11 @@ export async function POST(req: NextRequest) {
 
     matched.push(testCase.key);
   }
+
+  console.log(`[automation/submit] ===== PROCESSING COMPLETE =====`);
+  console.log(`[automation/submit] Matched: ${matched.join(", ")}`);
+  console.log(`[automation/submit] Unmatched/External: ${unmatched.join(", ")}`);
+  console.log(`[automation/submit] Total: ${d.results.length}, Passed: ${passed}, Failed: ${failed}, Skipped: ${skipped}`);
 
   // Record the automation run
   const run = await prisma.automationRun.create({

@@ -58,11 +58,13 @@ export async function POST(
           environmentId: original.environmentId,
           buildId: original.buildId,
           executions: {
-            create: original.executions.map((e) => ({
-              testCaseId: e.testCaseId,
-              testCaseVersionId: versionMap.get(e.testCaseId) || e.testCaseVersionId,
-              status: "NOT_RUN",
-            })),
+            create: original.executions
+              .filter((e) => e.testCaseId !== null) // Only clone regular test case executions, skip external ones
+              .map((e) => ({
+                testCaseId: e.testCaseId!,
+                testCaseVersionId: versionMap.get(e.testCaseId!) || e.testCaseVersionId,
+                status: "NOT_RUN",
+              })),
           },
         },
         select: { id: true, key: true, summary: true },

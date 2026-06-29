@@ -90,7 +90,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
     where: { id: params.execId },
     include: { testCaseVersion: { include: { testCase: { select: { projectId: true } } } } },
   });
-  const projectId = execution?.testCaseVersion.testCase.projectId ?? "";
+
+  if (!execution || !execution.testCaseVersion) {
+    return err("Cannot add defect to external execution or non-existent execution", 400);
+  }
+
+  const projectId = execution.testCaseVersion.testCase.projectId;
   const issue = await getJiraIssue(projectId, parsed.data.jiraIssueKey);
 
   const defect = await prisma.defectLink.create({

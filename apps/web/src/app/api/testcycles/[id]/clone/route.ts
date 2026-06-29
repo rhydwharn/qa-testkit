@@ -29,7 +29,8 @@ export async function POST(
   const count = await prisma.testCycle.count({ where: { projectId: original.projectId } });
 
   // Get latest versions for each test case being cloned
-  const testCaseIds = [...new Set(original.executions.map((e) => e.testCaseId))];
+  // Filter out external executions that don't have a testCaseId
+  const testCaseIds = [...new Set(original.executions.map((e) => e.testCaseId).filter((id): id is string => id !== null))];
   const latestVersions = await prisma.testCaseVersion.findMany({
     where: {
       isLatest: true,

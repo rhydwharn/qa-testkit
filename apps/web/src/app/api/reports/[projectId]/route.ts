@@ -248,7 +248,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     });
 
     const latestByTc = new Map<string, string>();
-    latestExecs.forEach(e => latestByTc.set(e.testCaseId, e.status));
+    latestExecs.forEach(e => {
+      if (e.testCaseId) {
+        latestByTc.set(e.testCaseId, e.status);
+      }
+    });
 
     // 4. Build coverage result
     const requirements = Array.from(reqMap.entries()).map(([reqKey, cases]) => {

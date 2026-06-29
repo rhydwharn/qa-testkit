@@ -35,7 +35,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           distinct: ["testCaseId"],
         });
 
-        const testCaseIds = executions.map((e) => e.testCaseId);
+        // Filter out external executions that don't have a testCaseId
+        const testCaseIds = executions.map((e) => e.testCaseId).filter((id): id is string => id !== null);
         const latestVersions = await tx.testCaseVersion.findMany({
           where: { testCaseId: { in: testCaseIds }, isLatest: true },
           select: { id: true, testCaseId: true },

@@ -11,22 +11,27 @@ const registerSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  if (!body) return err("Invalid JSON");
+  try {
+    const body = await req.json().catch(() => null);
+    if (!body) return err("Invalid JSON");
 
-  const parsed = registerSchema.safeParse(body);
-  if (!parsed.success) return err(parsed.error.errors[0]?.message ?? "Validation failed");
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) return err(parsed.error.errors[0]?.message ?? "Validation failed");
 
-  const { name, email, password } = parsed.data;
+    const { name, email, password } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return err("An account with this email already exists", 409);
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return err("An account with this email already exists", 409);
 
-  const passwordHash = await hash(password, 12);
-  const user = await prisma.user.create({
-    data: { name, email, password: passwordHash, role: "TESTER" },
-    select: { id: true, name: true, email: true },
-  });
+    const passwordHash = await hash(password, 12);
+    const user = await prisma.user.create({
+      data: { name, email, password: passwordHash, role: "TESTER" },
+      select: { id: true, name: true, email: true },
+    });
 
-  return ok(user, 201);
+    return ok(user, 201);
+  } catch (error) {
+    console.error("[register] Error:", error);
+    return err(error instanceof Error ? error.message : "Registration failed", 500);
+  }
 }

@@ -65,6 +65,7 @@ interface ImportCase {
   labels?: string[];
   jiraRequirementKeys?: string[];
   folder?: string;
+  key?: string;
   steps?: Array<{ stepDetails: string; expectedResult?: string; testData?: string }>;
 }
 

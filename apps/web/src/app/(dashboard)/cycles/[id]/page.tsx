@@ -1250,10 +1250,12 @@ function ExecTab({
     setLocalAttachments(exec.attachments ?? []);
   }, [exec.id]);
 
+  const screenshotCount = localAttachments.filter(a => a.mimeType?.startsWith("image/")).length;
+
   const subTabs: { key: ExecSubTab; label: string; count?: number }[] = [
     { key: "steps", label: "Steps", count: steps.length },
     { key: "bug", label: "Bug", count: exec.defects.length },
-    { key: "attachments", label: "Attachments", count: localAttachments.length },
+    { key: "attachments", label: `Attachments${screenshotCount > 0 ? ` (📸 ${screenshotCount})` : ""}`, count: localAttachments.length },
     { key: "comments", label: "Comments" },
     { key: "fields", label: "Execution Custom Fields" },
     { key: "history", label: "Execution History" },
@@ -1458,24 +1460,44 @@ function ExecTab({
           </div>
           {/* Attachment list */}
           {localAttachments.length > 0 ? (
-            <div className="space-y-2">
-              {localAttachments.map((att) => (
-                <div key={att.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/20">
-                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{att.fileName}</p>
-                    <p className="text-xs text-muted-foreground">{(att.fileSize / 1024).toFixed(1)} KB</p>
+            <div className="space-y-3">
+              {localAttachments.map((att) => {
+                const isScreenshot = att.mimeType?.startsWith("image/");
+                const isBase64 = att.storageKey && !att.storageKey.startsWith("http");
+                const displayUrl = isBase64 ? `data:${att.mimeType};base64,${att.storageKey}` : att.storageKey;
+
+                return (
+                  <div key={att.id} className="space-y-2 rounded-lg border border-border p-3 hover:bg-muted/10">
+                    <div className="flex items-center gap-3">
+                      <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{att.fileName}</p>
+                        <p className="text-xs text-muted-foreground">{(att.fileSize / 1024).toFixed(1)} KB</p>
+                      </div>
+                      {isScreenshot && (
+                        <a
+                          href={displayUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 hover:underline shrink-0"
+                        >
+                          View
+                        </a>
+                      )}
+                    </div>
+                    {/* Display screenshot preview if it's an image */}
+                    {isScreenshot && displayUrl && (
+                      <div className="rounded-md overflow-hidden border border-border bg-muted/20">
+                        <img
+                          src={displayUrl}
+                          alt={att.fileName}
+                          className="max-w-full h-auto max-h-96 object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <a
-                    href={`/api/attachments/${att.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-blue-600 hover:underline shrink-0"
-                  >
-                    View
-                  </a>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center">No attachments yet. Upload a screenshot above.</p>

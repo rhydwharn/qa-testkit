@@ -75,6 +75,7 @@ interface TestCaseExecution {
   actualResult?: string;
   comment?: string;
   executionMethod?: string;
+  externalTestKey?: string | null;
   defects: { id: string; jiraIssueKey: string; jiraSummary?: string }[];
   stepExecutions: StepExecution[];
   attachments?: Attachment[];

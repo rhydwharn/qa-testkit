@@ -137,7 +137,7 @@ export function Sidebar() {
         )}
         <button
           onClick={toggle}
-          className="text-sidebar-fg hover:text-white hover:bg-sidebar-hover rounded p-0.5 transition-colors shrink-0"
+          className="text-sidebar-fg hover:text-white hover:bg-sidebar-hover rounded p-0.5 transition-colors shrink-0 relative z-40"
           title={expanded ? "Collapse sidebar" : "Expand sidebar"}
           data-testid="sidebar-toggle-button"
         >

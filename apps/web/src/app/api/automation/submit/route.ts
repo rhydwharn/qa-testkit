@@ -219,6 +219,30 @@ export async function POST(req: NextRequest) {
 
       console.log(`[automation/submit] External execution created: ${execution.id} for key ${externalKey}`);
 
+      // ── Handle screenshot attachment for external execution ───────────────────────────
+      if (result.screenshot) {
+        try {
+          let base64Data = result.screenshot;
+          if (base64Data.startsWith("data:")) {
+            base64Data = base64Data.split(",")[1];
+          }
+          const fileSizeEstimate = Math.ceil((base64Data.length * 3) / 4);
+
+          await prisma.attachment.create({
+            data: {
+              fileName: `screenshot-${execution.id}.png`,
+              fileSize: fileSizeEstimate,
+              mimeType: "image/png",
+              storageKey: base64Data,
+              executionId: execution.id,
+            },
+          });
+          console.log(`[automation/submit] Screenshot attachment created for external execution ${execution.id}`);
+        } catch (e) {
+          console.warn(`[automation/submit] Screenshot handling error for external execution:`, e);
+        }
+      }
+
       // ── Process steps for external execution ───────────────────────────────────────────────────
       // For external test cases with steps, create temporary test case/version to store step results
       if (result.steps && result.steps.length > 0) {
@@ -407,20 +431,27 @@ export async function POST(req: NextRequest) {
     // ── Handle screenshot attachment ───────────────────────────────────────────
     if (result.screenshot && execution) {
       try {
-        // Upload screenshot as attachment
-        const fd = new FormData();
-        fd.append("file", result.screenshot); // base64 or URL
-        fd.append("testCaseExecutionId", execution.id);
-        fd.append("description", `Screenshot from ${framework} automation run`);
+        // Store screenshot as base64 attachment
+        // Format: "data:image/png;base64,<base64_data>" or direct base64
+        let base64Data = result.screenshot;
+        if (base64Data.startsWith("data:")) {
+          // Extract base64 data from data URI
+          base64Data = base64Data.split(",")[1];
+        }
 
-        await fetch(`/api/attachments`, {
-          method: "POST",
-          body: fd,
-          headers: { "Authorization": `Bearer ${process.env.AUTOMATION_API_KEY}` },
-        }).catch(() => {
-          // Silently fail on screenshot upload - don't block test result submission
-          console.warn(`[automation/submit] Failed to upload screenshot for execution ${execution.id}`);
+        // Estimate file size from base64 (roughly 4/3 of base64 string length)
+        const fileSizeEstimate = Math.ceil((base64Data.length * 3) / 4);
+
+        await prisma.attachment.create({
+          data: {
+            fileName: `screenshot-${execution.id}.png`,
+            fileSize: fileSizeEstimate,
+            mimeType: "image/png",
+            storageKey: base64Data, // Store base64 data directly
+            executionId: execution.id,
+          },
         });
+        console.log(`[automation/submit] Screenshot attachment created for execution ${execution.id}`);
       } catch (e) {
         console.warn(`[automation/submit] Screenshot handling error:`, e);
       }

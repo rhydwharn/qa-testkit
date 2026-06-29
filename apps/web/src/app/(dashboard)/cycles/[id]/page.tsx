@@ -1463,8 +1463,14 @@ function ExecTab({
             <div className="space-y-3">
               {localAttachments.map((att) => {
                 const isScreenshot = att.mimeType?.startsWith("image/");
-                const isBase64 = att.storageKey && !att.storageKey.startsWith("http");
-                const displayUrl = isBase64 ? `data:${att.mimeType};base64,${att.storageKey}` : att.storageKey;
+                // Check if storageKey is base64 (automation screenshot) or file path (manual upload)
+                const isBase64 = att.storageKey && (att.storageKey.match(/^[A-Za-z0-9+/=]{100,}$/) || att.storageKey.startsWith("data:"));
+                // For base64, create data URL; for file paths, use direct path
+                const displayUrl = isBase64
+                  ? att.storageKey.startsWith("data:")
+                    ? att.storageKey
+                    : `data:${att.mimeType};base64,${att.storageKey}`
+                  : `/api/attachments/${att.id}`;
 
                 return (
                   <div key={att.id} className="space-y-2 rounded-lg border border-border p-3">
@@ -1483,6 +1489,7 @@ function ExecTab({
                           src={displayUrl}
                           alt={att.fileName}
                           className="w-full h-auto max-h-[500px] object-contain"
+                          onError={() => console.error(`Failed to load image: ${att.fileName}`)}
                         />
                       </div>
                     )}

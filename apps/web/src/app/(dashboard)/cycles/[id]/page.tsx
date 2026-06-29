@@ -549,6 +549,9 @@ function ExecListItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-[11px] font-mono text-blue-600 font-semibold leading-none">{tc.key}</span>
+          {tc.key.startsWith("EXTERNAL") && (
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">External</span>
+          )}
           {exec.testCaseVersion.versionNumber != null && (
             <span className="text-[9px] text-muted-foreground bg-muted px-1 rounded">v{exec.testCaseVersion.versionNumber}</span>
           )}
@@ -1578,6 +1581,7 @@ function StepsContent({
         {steps.map((step, idx) => {
           const stepExec = exec.stepExecutions.find((se) => se.testStepId === step.id);
           const stepStatus: ExecStatus = stepExec?.status ?? "NOT_RUN";
+          const isNotExecuted = stepStatus === "NOT_RUN" && stepExec?.actualResult?.includes("Test execution stopped");
           const stepKey = `${exec.id}-${step.id}`;
           const executedByName = exec.executedBy?.name ?? exec.assignee?.name;
           const executedAt = formatDate(exec.executedAt ?? undefined);
@@ -1602,7 +1606,9 @@ function StepsContent({
                       style={stepStatus === s ? { backgroundColor: STATUS_DOT_COLOR[s] } : {}}
                     />
                   ))}
-                  {stepStatus !== "NOT_RUN" && (
+                  {isNotExecuted ? (
+                    <span className="text-xs font-semibold text-amber-600">NOT_EXECUTED</span>
+                  ) : stepStatus !== "NOT_RUN" && (
                     <span
                       className="text-xs font-semibold"
                       style={{ color: STATUS_DOT_COLOR[stepStatus] }}

@@ -250,8 +250,9 @@ export async function POST(req: NextRequest) {
             stepStatus = execStatus;
             stepError = result.error ?? null;
           } else {
-            // Steps after failure: NOT_RUN (never executed)
+            // Steps after failure: NOT_RUN with message explaining why
             stepStatus = "NOT_RUN";
+            stepError = `Test execution stopped - Step ${result.failingStepIndex + 1} failed`;
           }
 
           await upsertStepExecution(execution.id, testSteps[i].id, stepStatus, stepError, null);

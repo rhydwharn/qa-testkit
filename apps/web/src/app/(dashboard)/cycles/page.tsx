@@ -196,17 +196,17 @@ export default function CyclesPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0" data-testid={TestIds.cycles.page}>
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card" data-testid="cycles-page-header">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground" data-testid={TestIds.cycles.title}>Test Cycles</h1>
-          <p className="text-xs text-muted-foreground mt-0.5" data-testid="cycles-page-subtitle">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border bg-card gap-3 md:gap-2" data-testid="cycles-page-header">
+        <div className="min-w-0">
+          <h1 className="text-base md:text-lg font-semibold text-foreground" data-testid={TestIds.cycles.title}>Test Cycles</h1>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate" data-testid="cycles-page-subtitle">
             {filteredCycles.length} cycles in {selectedProject?.name ?? "project"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/cycles/new?projectId=${projectId}`}>
-            <Button size="sm" className="gap-1.5 h-8">
-              <Plus className="h-3.5 w-3.5" /> New Cycle
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href={`/cycles/new?projectId=${projectId}`} className="w-full md:w-auto">
+            <Button size="sm" className="gap-1.5 h-8 w-full md:w-auto">
+              <Plus className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">New Cycle</span><span className="sm:hidden">New</span>
             </Button>
           </Link>
         </div>
@@ -228,8 +228,8 @@ export default function CyclesPage() {
       )}
 
       {/* Toolbar: search + filters */}
-      <div className="px-6 py-3 border-b border-border bg-background flex items-center gap-3 flex-wrap" data-testid="cycles-toolbar">
-        <div className="relative flex-1 min-w-48 max-w-sm" data-testid="cycles-search-container">
+      <div className="px-4 md:px-6 py-3 border-b border-border bg-background flex flex-col md:flex-row md:items-center gap-3 md:gap-3" data-testid="cycles-toolbar">
+        <div className="relative flex-1 min-w-0 md:min-w-48 md:max-w-sm" data-testid="cycles-search-container">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
@@ -240,13 +240,13 @@ export default function CyclesPage() {
           />
         </div>
         {/* Status pills */}
-        <div className="flex items-center gap-1.5" data-testid="cycles-status-filters">
+        <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto" data-testid="cycles-status-filters">
           {(["DRAFT", "ACTIVE", "CLOSED"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter((f) => (f === s ? null : s))}
               className={cn(
-                "px-2.5 py-1 rounded text-xs font-medium transition-colors",
+                "px-2.5 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap",
                 statusFilter === s
                   ? s === "ACTIVE"
                     ? "bg-primary text-primary-foreground"
@@ -260,7 +260,7 @@ export default function CyclesPage() {
           ))}
         </div>
         {/* Archived toggle */}
-        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer ml-auto" data-testid="cycles-archived-toggle-label">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer md:ml-auto shrink-0" data-testid="cycles-archived-toggle-label">
           <button
             role="switch"
             aria-checked={showArchived}
@@ -278,7 +278,7 @@ export default function CyclesPage() {
               )}
             />
           </button>
-          Archived
+          <span className="hidden md:inline">Archived</span><span className="md:hidden">Archive</span>
         </label>
       </div>
 

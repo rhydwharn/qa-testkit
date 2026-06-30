@@ -46,6 +46,17 @@ export async function POST(req: NextRequest) {
   if (!projectId) return err("projectId is required");
   if (!Array.isArray(cases) || cases.length === 0) return err("cases array is required");
   if (cases.length > 500) return err("Max 500 test cases per import");
+  
+  // Validate case structure
+  const invalidCases = cases.filter((c, idx) => {
+    if (!c.summary?.trim()) return true;
+    if (c.steps && !Array.isArray(c.steps)) return true;
+    if (c.steps?.some(s => typeof s.stepDetails !== 'string')) return true;
+    return false;
+  });
+  if (invalidCases.length > 0) {
+    return err(`Invalid case format: all cases must have summary string and steps array with stepDetails`);
+  }
 
   try {
   // Verify access to the project
@@ -103,6 +114,16 @@ export async function POST(req: NextRequest) {
       if (cached !== undefined) {
         currentParentId = cached;
       } else {
+        // Validate parent folder exists if setting a parent
+        if (currentParentId) {
+          const parentExists = await prisma.folder.findUnique({
+            where: { id: currentParentId },
+          });
+          if (!parentExists) {
+            throw new Error(`Parent folder ${currentParentId} not found`);
+          }
+        }
+        
         const created = await prisma.folder.create({
           data: { projectId, name: segment, parentId: currentParentId ?? null, type: "CASE" },
         });

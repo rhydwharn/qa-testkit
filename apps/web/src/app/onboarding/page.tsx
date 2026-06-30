@@ -363,11 +363,16 @@ export default function OnboardingPage() {
                 id="project-key"
                 placeholder="SHOP"
                 value={projectKey}
-                onChange={(e) => setProjectKey(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10))}
+                onChange={(e) => setProjectKey(e.target.value.slice(0, 10))}
+                onBlur={(e) => {
+                  const formatted = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+                  setProjectKey(formatted);
+                }}
+                maxLength={10}
                 required
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">2–10 uppercase letters, e.g. SHOP, MOBILE</p>
+              <p className="text-xs text-muted-foreground">2–10 uppercase alphanumeric, e.g. SHOP, MOBILE</p>
             </div>
 
             <div className="space-y-1.5">

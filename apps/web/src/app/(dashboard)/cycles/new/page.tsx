@@ -142,9 +142,13 @@ export default function NewCyclePage() {
                 id="summary"
                 placeholder="e.g. Sprint 12 Regression, Release 2.1 Smoke"
                 value={summary}
-                onChange={(e) => setSummary(e.target.value)}
+                onChange={(e) => setSummary(e.target.value.slice(0, 200))}
+                maxLength={200}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                {summary.length}/200 characters
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="description">Description</Label>
@@ -159,8 +163,8 @@ export default function NewCyclePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Status</Label>
-                <Select value={cycleStatus} onValueChange={(v) => setCycleStatus(v as typeof cycleStatus)}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <Select value={cycleStatus} onValueChange={(v) => setCycleStatus(v as typeof cycleStatus)} disabled={saving}>
+                  <SelectTrigger className="w-full" disabled={saving}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="DRAFT">Draft</SelectItem>
                     <SelectItem value="ACTIVE">Active</SelectItem>
@@ -172,8 +176,8 @@ export default function NewCyclePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Environment</Label>
-                <Select value={environmentId} onValueChange={setEnvironmentId}>
-                  <SelectTrigger className="w-full">
+                <Select value={environmentId} onValueChange={setEnvironmentId} disabled={saving}>
+                  <SelectTrigger className="w-full" disabled={saving}>
                     <SelectValue placeholder={environments.length === 0 ? "None configured" : "Select environment"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -190,8 +194,8 @@ export default function NewCyclePage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Build</Label>
-                <Select value={buildId} onValueChange={setBuildId}>
-                  <SelectTrigger className="w-full">
+                <Select value={buildId} onValueChange={setBuildId} disabled={saving}>
+                  <SelectTrigger className="w-full" disabled={saving}>
                     <SelectValue placeholder={builds.length === 0 ? "None configured" : "Select build"} />
                   </SelectTrigger>
                   <SelectContent>

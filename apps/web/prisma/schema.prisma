@@ -83,16 +83,17 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts           Account[]
-  sessions           Session[]
-  tenantMembers      TenantMember[]
-  projectMembers     ProjectMember[]
-  testCaseExecutions TestCaseExecution[]
-  createdCycles      TestCycle[]         @relation("CycleCreator")
-  apiKeys            ApiKey[]
-  comments           Comment[]
-  createdFilters     SavedFilter[]       @relation("FilterCreator")
-  attachments        Attachment[]
+  accounts              Account[]
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+  tenantMembers         TenantMember[]
+  projectMembers        ProjectMember[]
+  testCaseExecutions    TestCaseExecution[]
+  createdCycles         TestCycle[]         @relation("CycleCreator")
+  apiKeys               ApiKey[]
+  comments              Comment[]
+  createdFilters        SavedFilter[]       @relation("FilterCreator")
+  attachments           Attachment[]
 }
 
 enum UserRole {
@@ -127,6 +128,21 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
+  @@index([userId])
 }
 
 model ApiKey {

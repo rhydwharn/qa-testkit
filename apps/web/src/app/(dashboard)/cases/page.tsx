@@ -2091,19 +2091,29 @@ export default function CasesPage() {
         style={folderSidebarOpen ? { width: folderSidebarWidth } : undefined}
         className={cn(
           "shrink-0 flex flex-col bg-background overflow-hidden transition-[width] duration-200",
-          folderSidebarOpen ? "" : "w-0"
+          folderSidebarOpen ? "" : "w-0",
+          "fixed md:relative inset-y-0 left-0 z-20 md:z-auto md:bg-background md:border-r"
         )}
       >
         <div className="px-3 py-3 border-b border-border shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Folders</span>
-            <button
-              onClick={() => setShowNewFolder((p) => !p)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              title="New folder"
-            >
-              <FolderPlus className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowNewFolder((p) => !p)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="New folder"
+              >
+                <FolderPlus className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setFolderSidebarOpen(false)}
+                className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
+                title="Close folders"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           {showNewFolder && (
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -2183,7 +2193,20 @@ export default function CasesPage() {
         </div>
       </aside>
 
-      {folderSidebarOpen && <PanelResizeHandle onMouseDown={onFolderSidebarResize} />}
+      {folderSidebarOpen && (
+        <div className="hidden md:block">
+          <PanelResizeHandle onMouseDown={onFolderSidebarResize} />
+        </div>
+      )}
+
+      {/* Mobile overlay backdrop */}
+      {folderSidebarOpen && (
+        <div
+          className="fixed inset-0 top-12 bg-black/20 z-10 md:hidden"
+          onClick={() => setFolderSidebarOpen(false)}
+          data-testid="cases-folder-overlay"
+        />
+      )}
 
       {/* ======================================================================
           MAIN LIST AREA
@@ -2193,11 +2216,11 @@ export default function CasesPage() {
         {/* Toolbar */}
         <div className="p-4 border-b border-border space-y-3 shrink-0" data-testid="cases-toolbar">
           <div className="flex items-center gap-3" data-testid="cases-toolbar-top">
-            {/* Folder toggle */}
+            {/* Folder toggle (mobile only) */}
             <button
               onClick={() => setFolderSidebarOpen(!folderSidebarOpen)}
               title="Toggle folders"
-              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              className="md:hidden text-muted-foreground hover:text-foreground transition-colors shrink-0"
               data-testid="cases-folder-toggle"
             >
               <FolderOpen className="h-4 w-4" />

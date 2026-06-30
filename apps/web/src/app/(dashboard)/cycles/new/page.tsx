@@ -72,6 +72,19 @@ export default function NewCyclePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!projectId) { setError("No project selected"); return; }
+    
+    // Validate selected environment if set
+    if (environmentId && !environments.find(e => e.id === environmentId)) {
+      setError("Selected environment is no longer available");
+      return;
+    }
+    
+    // Validate selected build if set
+    if (buildId && !builds.find(b => b.id === buildId)) {
+      setError("Selected build is no longer available");
+      return;
+    }
+    
     setSaving(true);
     setError("");
 

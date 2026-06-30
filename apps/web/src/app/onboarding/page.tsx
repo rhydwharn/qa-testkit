@@ -417,10 +417,15 @@ export default function OnboardingPage() {
                   <Input
                     id="key-name"
                     value={keyName}
-                    onChange={(e) => setKeyName(e.target.value)}
+                    onChange={(e) => setKeyName(e.target.value.slice(0, 100))}
+                    maxLength={100}
+                    placeholder="CI/CD Pipeline"
                     required
                     autoFocus
                   />
+                  <p className="text-xs text-muted-foreground">
+                    {keyName.length}/100 characters
+                  </p>
                 </div>
 
                 <div className="flex gap-3">

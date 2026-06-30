@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TestIds } from "@/lib/test-ids";
@@ -32,8 +32,15 @@ export function FolderRenameDialog({
 
   const [newName, setNewName] = useState(currentName);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    setNewName(currentName);
+    setErrorMessage("");
+  }, [currentName]);
 
   const handleRename = async () => {
+    setErrorMessage("");
     if (!newName.trim() || newName === currentName) {
       return;
     }
@@ -52,9 +59,13 @@ export function FolderRenameDialog({
       if (response.ok) {
         onRename(newName);
         onOpenChange?.(false);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setErrorMessage(data.error || "Failed to rename folder");
       }
     } catch (error) {
       console.error("Failed to rename folder:", error);
+      setErrorMessage("Failed to rename folder. Please try again.");
     } finally {
       setIsLoading(false);
     }

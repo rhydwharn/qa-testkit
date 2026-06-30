@@ -36,6 +36,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -99,6 +100,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       }
     } catch (error) {
       console.error("Failed to add comment:", error);
+      setError("Failed to add comment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +127,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       }
     } catch (error) {
       console.error("Failed to edit comment:", error);
+      setError("Failed to edit comment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -141,6 +144,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
       }
     } catch (error) {
       console.error("Failed to delete comment:", error);
+      setError("Failed to delete comment. Please try again.");
     }
   };
 

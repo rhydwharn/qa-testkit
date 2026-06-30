@@ -23,9 +23,11 @@ export function ArchiveButton({
 
   const [isLoading, setIsLoading] = useState(false);
   const [archived, setArchived] = useState(isArchived);
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggleArchive = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const endpoint = archived ? "unarchive" : "archive";
       const ENTITY_PATH: Record<string, string> = {
@@ -42,22 +44,35 @@ export function ArchiveButton({
         const newArchivedState = !archived;
         setArchived(newArchivedState);
         onArchiveChange?.(newArchivedState);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        const errorMsg = data.error || `Failed to ${endpoint} item`;
+        setError(errorMsg);
+        console.error("Archive toggle failed:", errorMsg);
       }
     } catch (error) {
       console.error("Failed to toggle archive:", error);
+      setError("Failed to update archive status. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Button
-      onClick={handleToggleArchive}
-      disabled={isLoading}
-      variant="outline"
-      size="sm"
-      className="gap-2"
-    >
+    <>
+      {error && (
+        <p className="text-xs text-destructive mb-2" role="alert">
+          {error}
+        </p>
+      )}
+      <Button
+        onClick={handleToggleArchive}
+        disabled={isLoading}
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        title={error || (archived ? "Unarchive this item" : "Archive this item")}
+      >
       {archived ? (
         <>
           <ArchiveRestore className="h-4 w-4" />
@@ -70,6 +85,7 @@ export function ArchiveButton({
         </>
       )}
     </Button>
+    </>
   );
 }
 

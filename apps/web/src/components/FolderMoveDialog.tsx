@@ -39,6 +39,7 @@ export function FolderMoveDialog({
   const [folders, setFolders] = useState<FolderNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMoving, setIsMoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
@@ -94,6 +95,7 @@ export function FolderMoveDialog({
 
   const handleMove = async () => {
     setIsMoving(true);
+    setError(null);
     try {
       const response = await fetch("/api/folders", {
         method: "PUT",
@@ -107,9 +109,13 @@ export function FolderMoveDialog({
       if (response.ok) {
         onMove(selectedFolderId || null);
         onOpenChange?.(false);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.error || "Failed to move folder");
       }
     } catch (error) {
       console.error("Failed to move folder:", error);
+      setError("Failed to move folder. Please try again.");
     } finally {
       setIsMoving(false);
     }

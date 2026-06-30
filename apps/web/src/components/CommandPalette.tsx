@@ -65,7 +65,7 @@ export function CommandPalette() {
     return () => { window.removeEventListener("open-command", handleOpen); window.removeEventListener("keydown", handleKey); };
   }, [open, filtered, selected]);
 
-  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+  useEffect(() => { if (open) { setQuery(""); setSelected(0); setTimeout(() => inputRef.current?.focus(), 50); } }, [open]);
   useEffect(() => { setSelected(0); }, [query]);
 
   if (!open) return null;

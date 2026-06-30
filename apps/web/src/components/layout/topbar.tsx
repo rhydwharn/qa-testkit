@@ -33,7 +33,7 @@ export function Topbar({ user }: TopbarProps) {
     fetch("/api/tenants")
       .then(r => r.ok ? r.json() : [])
       .then(data => { if (Array.isArray(data)) setTenants(data); })
-      .catch(() => {});
+      .catch((err) => { console.error("Fetch failed:", err); });
   }, [tenantId]);
 
   const showSwitcher = tenants.length > 1;

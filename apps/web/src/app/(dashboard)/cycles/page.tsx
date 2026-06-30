@@ -651,6 +651,8 @@ export default function CyclesPage() {
         <CloneCycleDialog
           cycleId={cloneDialogCycle.id}
           cycleSummary={cloneDialogCycle.summary}
+          open={!!cloneDialogCycle}
+          onOpenChange={(isOpen) => !isOpen && setCloneDialogCycle(null)}
           onClone={() => {
             setCloneDialogCycle(null);
             loadCycles();

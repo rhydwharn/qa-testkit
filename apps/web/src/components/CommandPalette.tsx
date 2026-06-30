@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, LayoutDashboard, ClipboardList, RefreshCw, FileText, BarChart2, Zap, Settings2, Plus, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,14 +40,14 @@ export function CommandPalette() {
     { id: "new-plan", label: "New Test Plan", icon: Plus, action: () => router.push(`/plans/new${pq}`), group: "Create" },
   ];
 
-  const filtered = query.trim()
+  const filtered = useMemo(() => query.trim()
     ? ALL_COMMANDS.filter(c =>
         c.label.toLowerCase().includes(query.toLowerCase()) ||
         c.group.toLowerCase().includes(query.toLowerCase())
       )
-    : ALL_COMMANDS;
+    : ALL_COMMANDS, [query]);
 
-  const groups = [...new Set(filtered.map(c => c.group))];
+  const groups = useMemo(() => [...new Set(filtered.map(c => c.group))], [filtered]);
 
   // Listen for open event and keyboard shortcut
   useEffect(() => {

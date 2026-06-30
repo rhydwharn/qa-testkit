@@ -94,7 +94,7 @@ export function CommentThread({ entityType, entityId }: CommentThreadProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setComments([...comments, data]);
+        setComments(prev => [...prev, data]);
         setNewComment("");
       }
     } catch (error) {

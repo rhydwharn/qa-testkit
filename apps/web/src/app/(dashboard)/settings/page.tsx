@@ -182,7 +182,7 @@ export default function SettingsPage() {
         setJiraProjectKey(data.jiraProjectKey || "");
         setJiraUserEmail(data.jiraUserEmail || "");
         if (data.hasToken) setJiraApiToken("••••••••");
-      }).catch(() => {});
+      }).catch((err) => { console.error("Fetch failed:", err); });
   }, [selectedProjectId]);
 
   useEffect(() => {

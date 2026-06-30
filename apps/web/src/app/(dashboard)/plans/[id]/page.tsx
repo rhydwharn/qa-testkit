@@ -226,7 +226,7 @@ export default function PlanDetailPage() {
     fetch(`/api/testcycles?projectId=${projectId}`)
       .then((r) => r.json())
       .then((data: AvailableCycle[]) => setAvailableCycles(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch((err) => { console.error("Fetch failed:", err); });
   }
 
   async function linkCycle() {

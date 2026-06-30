@@ -115,15 +115,23 @@ export default function OnboardingPage() {
     if (logoFile) {
       const fd = new FormData();
       fd.append("file", logoFile);
-      await fetch(`/api/tenants/${newTenantId}/logo`, { method: "PATCH", body: fd }).catch(() => {});
+      try {
+        await fetch(`/api/tenants/${newTenantId}/logo`, { method: "PATCH", body: fd });
+      } catch (err) {
+        console.error("Failed to upload logo:", err);
+      }
     }
 
     // Always set logoDisplay preference
-    await fetch(`/api/tenants/${newTenantId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ logoDisplay }),
-    }).catch(() => {});
+    try {
+      await fetch(`/api/tenants/${newTenantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoDisplay }),
+      });
+    } catch (err) {
+      console.error("Failed to set logo display preference:", err);
+    }
 
 
     setStep1Loading(false);

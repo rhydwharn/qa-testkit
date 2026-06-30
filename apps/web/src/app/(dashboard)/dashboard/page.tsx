@@ -111,7 +111,9 @@ export default function DashboardPage() {
         setProjectSummary(summary);
         setRecentCycles(Array.isArray(cycles) ? cycles.slice(0, 8) : []);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch dashboard data:", err);
+      });
   }, [selectedProjectId]);
 
   const pq = selectedProjectId ? `?projectId=${selectedProjectId}` : "";

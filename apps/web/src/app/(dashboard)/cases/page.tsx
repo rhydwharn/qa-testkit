@@ -1401,10 +1401,9 @@ function AccordionStepsPanel({
   onChangeNewStepField,
   onSaveNewStep,
 }: AccordionStepsPanelProps) {
-  const steps = tc.versions[0]?.steps ?? [];
   const tcId = tc.id;
 
-  if (!tc.versions[0]) {
+  if (!tc.versions || tc.versions.length === 0 || !tc.versions[0]) {
     return (
       <div className="p-4 text-sm text-muted-foreground">
         No version data available.{" "}
@@ -1414,6 +1413,8 @@ function AccordionStepsPanel({
       </div>
     );
   }
+
+  const steps = tc.versions[0].steps ?? [];
 
   return (
     <div className="bg-muted/20 border-t border-border">
@@ -1842,7 +1843,7 @@ export default function CasesPage() {
     fetch(`/api/folders?projectId=${projectId}&type=CASE`)
       .then((r) => r.json())
       .then((d) => setFolders(Array.isArray(d) ? d : []))
-      .catch(() => {});
+      .catch((err) => { console.error("Fetch failed:", err); });
   }, [projectId]);
 
   useEffect(() => { loadCases(); loadFolders(); }, [loadCases, loadFolders]);

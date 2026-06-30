@@ -118,14 +118,13 @@ export default function OnboardingPage() {
       await fetch(`/api/tenants/${newTenantId}/logo`, { method: "PATCH", body: fd }).catch(() => {});
     }
 
-    // Set logoDisplay preference if changed from default
-    if (logoDisplay !== "NAME_ONLY") {
-      await fetch(`/api/tenants/${newTenantId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logoDisplay }),
-      }).catch(() => {});
-    }
+    // Always set logoDisplay preference
+    await fetch(`/api/tenants/${newTenantId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ logoDisplay }),
+    }).catch(() => {});
+
 
     setStep1Loading(false);
     // Refresh JWT so tenantId is in session

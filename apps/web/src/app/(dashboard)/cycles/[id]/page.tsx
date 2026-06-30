@@ -1280,7 +1280,7 @@ function ExecTab({
     <div data-testid="cycles-detail-page">
       {/* Metadata grid — 2 rows × 4 cols */}
       <div className="px-5 py-4 border-b border-border">
-        <div className="grid grid-cols-4 gap-x-6 gap-y-3 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 text-sm">
           <div>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-0.5">Environment</p>
             <p className="text-sm">{cycleEnv ?? <span className="text-muted-foreground">—</span>}</p>
@@ -1672,7 +1672,7 @@ function StepsContent({
               )}
 
               {/* 3-column step content */}
-              <div className="grid grid-cols-3 divide-x divide-border">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-x divide-border">
                 <div className="px-4 py-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1.5">Step Summary</p>
                   <p className="text-sm">{step.stepDetails}</p>

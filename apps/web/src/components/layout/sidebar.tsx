@@ -78,7 +78,7 @@ export function Sidebar() {
   return (
     <nav
       className={cn(
-        "relative flex flex-col h-screen bg-sidebar border-r border-sidebar-border overflow-hidden z-30 shrink-0",
+        "relative hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border overflow-hidden z-30 shrink-0",
         "transition-[width] duration-200 ease-in-out",
         w
       )}

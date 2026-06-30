@@ -829,7 +829,7 @@ function ImportWizardModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Select Sheet {sheets.length > 0 && "*"}</label>
                   {sheets.length > 0 ? (
@@ -864,7 +864,7 @@ function ImportWizardModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 rounded-xl border p-4 bg-muted/20">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 rounded-xl border p-4 bg-muted/20">
                 <div>
                   <p className="text-xs font-semibold text-foreground mb-2.5">
                     If Test Case with the same key already exists in the system, then

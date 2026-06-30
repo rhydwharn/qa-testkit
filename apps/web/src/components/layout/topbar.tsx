@@ -41,8 +41,8 @@ export function Topbar({ user }: TopbarProps) {
   return (
     <header className="flex h-12 items-center justify-between border-b bg-card px-4 gap-4 shrink-0" data-testid="topbar-header">
       {/* Left: section label */}
-      <div className="w-32 shrink-0" data-testid="topbar-section-label">
-        <span className="text-sm font-semibold text-foreground" data-testid={`topbar-section-${segment || "default"}`}>
+      <div className="hidden sm:block sm:w-24 md:w-32 shrink-0" data-testid="topbar-section-label">
+        <span className="text-xs sm:text-sm font-semibold text-foreground" data-testid={`topbar-section-${segment || "default"}`}>
           {segment ? SECTION_LABELS[segment] : (tenantName ?? "QA Testkit")}
         </span>
       </div>
@@ -50,16 +50,16 @@ export function Topbar({ user }: TopbarProps) {
       {/* Center: command search */}
       <button
         onClick={() => window.dispatchEvent(new CustomEvent("open-command"))}
-        className="flex items-center gap-2 px-3 h-8 w-72 rounded-lg bg-muted/70 border border-border text-sm text-muted-foreground hover:bg-muted hover:border-primary/30 transition-colors"
+        className="flex items-center gap-2 px-3 h-8 w-full sm:w-auto md:w-72 rounded-lg bg-muted/70 border border-border text-sm text-muted-foreground hover:bg-muted hover:border-primary/30 transition-colors"
         data-testid="topbar-search-button"
       >
         <Search className="h-3.5 w-3.5 shrink-0" />
         <span className="flex-1 text-left text-xs" data-testid="topbar-search-text">Search or jump to…</span>
-        <kbd className="text-[10px] bg-background border rounded px-1 py-0.5 font-mono leading-none" data-testid="topbar-search-shortcut">⌘K</kbd>
+        <kbd className="hidden sm:inline-block text-[10px] bg-background border rounded px-1 py-0.5 font-mono leading-none" data-testid="topbar-search-shortcut">⌘K</kbd>
       </button>
 
       {/* Right: actions */}
-      <div className="flex items-center gap-1 w-32 justify-end shrink-0" data-testid="topbar-actions">
+      <div className="flex items-center gap-1 shrink-0 justify-end" data-testid="topbar-actions">
         <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="topbar-notifications-button">
           <Bell className="h-4 w-4" />
         </Button>

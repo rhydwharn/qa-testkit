@@ -595,7 +595,7 @@ export default function SettingsPage() {
                   {/* Display mode */}
                   <div className="space-y-2">
                     <Label>Sidebar display</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {(["NAME_ONLY", "LOGO_ONLY", "LOGO_AND_NAME"] as const).map((mode) => (
                         <button
                           key={mode}
@@ -792,7 +792,7 @@ export default function SettingsPage() {
                       {projectMsg.text}
                     </div>
                   )}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="key">Key</Label>
                       <Input id="key" name="key" placeholder="SHOP" className="uppercase" maxLength={10} required />
@@ -924,7 +924,7 @@ export default function SettingsPage() {
                       onChange={(e) => setJiraBaseUrl(e.target.value)}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="jiraEmail">JIRA Email</Label>
                       <Input

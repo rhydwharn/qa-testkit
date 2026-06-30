@@ -119,7 +119,7 @@ export default function DashboardPage() {
   const total = Object.values(execStats).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="flex flex-1 min-h-0" data-testid="dashboard-page">
+    <div className="flex flex-col md:flex-row flex-1 min-h-0" data-testid="dashboard-page">
       {/* Left column */}
       <div className="flex-1 min-w-0 p-6 overflow-y-auto">
         {/* Global stat pills */}
@@ -300,7 +300,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Right column — Activity */}
-      <div className="w-72 shrink-0 border-l border-border p-5 overflow-y-auto bg-card/50" data-testid="dashboard-activity-sidebar">
+      <div className="w-full md:w-72 shrink-0 border-t md:border-t-0 md:border-l border-border p-5 overflow-y-auto bg-card/50" data-testid="dashboard-activity-sidebar">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
           Activity
         </h3>

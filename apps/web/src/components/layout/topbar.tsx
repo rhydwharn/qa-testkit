@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { useTenant } from "@/hooks/use-tenant";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 const SECTION_LABELS: Record<string, string> = {
   cases: "Test Cases", cycles: "Test Cycles", plans: "Test Plans",
@@ -39,10 +40,11 @@ export function Topbar({ user }: TopbarProps) {
   const showSwitcher = tenants.length > 1;
 
   return (
-    <header className="flex h-12 items-center justify-between border-b bg-card px-4 gap-4 shrink-0" data-testid="topbar-header">
-      {/* Left: section label */}
-      <div className="hidden sm:block sm:w-24 md:w-32 shrink-0" data-testid="topbar-section-label">
-        <span className="text-xs sm:text-sm font-semibold text-foreground" data-testid={`topbar-section-${segment || "default"}`}>
+    <header className="relative flex h-12 items-center justify-between border-b bg-card px-4 gap-4 shrink-0" data-testid="topbar-header">
+      {/* Left: mobile nav (hamburger) or section label */}
+      <div className="flex items-center gap-2 sm:w-24 md:w-32 shrink-0" data-testid="topbar-left-section">
+        <MobileNav />
+        <span className="hidden sm:block text-xs sm:text-sm font-semibold text-foreground" data-testid={`topbar-section-${segment || "default"}`}>
           {segment ? SECTION_LABELS[segment] : (tenantName ?? "QA Testkit")}
         </span>
       </div>

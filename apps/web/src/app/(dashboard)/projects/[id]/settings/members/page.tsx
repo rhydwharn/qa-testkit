@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+
 import { Loader2, Mail, Trash2 } from "lucide-react";
 
 interface Member {
@@ -39,7 +39,7 @@ export default function ProjectMembersPage() {
         setMembers(data);
       } catch (error) {
         console.error("Error fetching members:", error);
-        toast.error("Failed to load members");
+        console.error("Failed to load members");
       } finally {
         setIsLoading(false);
       }
@@ -53,7 +53,7 @@ export default function ProjectMembersPage() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast.error("Email is required");
+      console.error("Email is required");
       return;
     }
 
@@ -70,7 +70,7 @@ export default function ProjectMembersPage() {
         throw new Error(error.message || "Failed to invite member");
       }
 
-      toast.success("Member invited successfully");
+      console.log("Member invited successfully");
       setEmail("");
       setRole("TESTER");
 
@@ -80,7 +80,7 @@ export default function ProjectMembersPage() {
       setMembers(data);
     } catch (error) {
       console.error("Error inviting member:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to invite member");
+      console.error(error instanceof Error ? error.message : "Failed to invite member");
     } finally {
       setIsInviting(false);
     }

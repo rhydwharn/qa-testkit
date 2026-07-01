@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface TestResult {
@@ -47,7 +47,7 @@ export default function PermissionsTestPage() {
 
   const handleTestSingleFeature = async () => {
     if (!projectId) {
-      toast.error("Please select a project");
+      console.error("Please select a project");
       return;
     }
 
@@ -71,10 +71,10 @@ export default function PermissionsTestPage() {
       };
 
       setTestResults((prev) => [newResult, ...prev]);
-      toast.success(newResult.message);
+      console.log(newResult.message);
     } catch (error) {
       console.error("Error testing permission:", error);
-      toast.error("Failed to test permission");
+      console.error("Failed to test permission");
     } finally {
       setIsRunning(false);
     }
@@ -82,7 +82,7 @@ export default function PermissionsTestPage() {
 
   const handleRunAllTests = async () => {
     if (!projectId) {
-      toast.error("Please select a project");
+      console.error("Please select a project");
       return;
     }
 
@@ -113,10 +113,10 @@ export default function PermissionsTestPage() {
 
       setTestResults(results);
       const passCount = results.filter((r) => r.result === "PASS").length;
-      toast.success(`Test complete: ${passCount}/${results.length} passed`);
+      console.log(`Test complete: ${passCount}/${results.length} passed`);
     } catch (error) {
       console.error("Error running tests:", error);
-      toast.error("Failed to run tests");
+      console.error("Failed to run tests");
     } finally {
       setIsRunning(false);
     }

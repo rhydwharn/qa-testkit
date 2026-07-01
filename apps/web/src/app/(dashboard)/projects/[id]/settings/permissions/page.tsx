@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PermissionsMatrix } from "@/components/PermissionsMatrix";
-import { toast } from "sonner";
+
 import { AlertCircle } from "lucide-react";
 
 interface FeatureRow {
@@ -48,7 +48,7 @@ export default function ProjectPermissionsPage() {
         setUseWorkspaceDefaults((data.projectFeatures || []).length === 0);
       } catch (error) {
         console.error("Error fetching permissions:", error);
-        toast.error("Failed to load permissions");
+        console.error("Failed to load permissions");
       } finally {
         setIsLoading(false);
       }
@@ -93,7 +93,7 @@ export default function ProjectPermissionsPage() {
 
       if (!response.ok) throw new Error("Failed to save permissions");
 
-      toast.success("Permissions updated successfully");
+      console.log("Permissions updated successfully");
       setChanges({});
       setHasChanges(false);
 
@@ -104,7 +104,7 @@ export default function ProjectPermissionsPage() {
       setWorkspaceDefaults(data.workspaceDefaults || []);
     } catch (error) {
       console.error("Error saving permissions:", error);
-      toast.error("Failed to save permissions");
+      console.error("Failed to save permissions");
     } finally {
       setIsSaving(false);
     }
@@ -125,14 +125,14 @@ export default function ProjectPermissionsPage() {
 
       if (!response.ok) throw new Error("Failed to revert permissions");
 
-      toast.success("Reverted to workspace defaults");
+      console.log("Reverted to workspace defaults");
       setProjectFeatures([]);
       setUseWorkspaceDefaults(true);
       setChanges({});
       setHasChanges(false);
     } catch (error) {
       console.error("Error reverting permissions:", error);
-      toast.error("Failed to revert permissions");
+      console.error("Failed to revert permissions");
     } finally {
       setIsSaving(false);
     }

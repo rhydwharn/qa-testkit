@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PermissionsMatrix } from "@/components/PermissionsMatrix";
-import { toast } from "sonner";
+
 
 interface FeatureRow {
   id: string;
@@ -39,7 +39,7 @@ export default function WorkspacePermissionsPage() {
         setFeatures(data.featureFlags || []);
       } catch (error) {
         console.error("Error fetching permissions:", error);
-        toast.error("Failed to load permissions");
+        console.error("Failed to load permissions");
       } finally {
         setIsLoading(false);
       }
@@ -86,7 +86,7 @@ export default function WorkspacePermissionsPage() {
 
       if (!response.ok) throw new Error("Failed to save permissions");
 
-      toast.success("Permissions updated successfully");
+      console.log("Permissions updated successfully");
       setChanges({});
       setHasChanges(false);
 
@@ -98,7 +98,7 @@ export default function WorkspacePermissionsPage() {
       setFeatures(data.featureFlags || []);
     } catch (error) {
       console.error("Error saving permissions:", error);
-      toast.error("Failed to save permissions");
+      console.error("Failed to save permissions");
     } finally {
       setIsSaving(false);
     }

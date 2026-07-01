@@ -16,16 +16,16 @@ const updateRoleSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     const roles = await prisma.customRole.findMany({
-      where: { tenantId: params.tenantId },
+      where: { tenantId: params.id },
       orderBy: { createdAt: "desc" },
     });
 
@@ -38,19 +38,19 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     // Check if user is tenant owner/admin
     const membership = await prisma.tenantMember.findUnique({
       where: {
         tenantId_userId: {
-          tenantId: params.tenantId,
+          tenantId: params.id,
           userId: (caller as any).userId,
         },
       },
@@ -68,13 +68,13 @@ export async function POST(
 
     // Check if role name already exists in this tenant
     const existing = await prisma.customRole.findFirst({
-      where: { tenantId: params.tenantId, name },
+      where: { tenantId: params.id, name },
     });
     if (existing) return err("A role with this name already exists", 409);
 
     const role = await prisma.customRole.create({
       data: {
-        tenantId: params.tenantId,
+        tenantId: params.id,
         name,
         description: description || null,
       },
@@ -94,13 +94,13 @@ export async function POST(
 
     for (const feature of features) {
       let featureFlag = await prisma.featureFlag.findFirst({
-        where: { tenantId: params.tenantId, featureName: feature },
+        where: { tenantId: params.id, featureName: feature },
       });
 
       if (!featureFlag) {
         featureFlag = await prisma.featureFlag.create({
           data: {
-            tenantId: params.tenantId,
+            tenantId: params.id,
             featureName: feature,
             description: feature.replace(/_/g, " "),
             isEnabled: true,

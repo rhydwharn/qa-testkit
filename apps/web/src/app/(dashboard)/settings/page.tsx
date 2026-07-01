@@ -953,6 +953,7 @@ export default function SettingsPage() {
                             const isEnabled = permission?.isEnabled ?? true;
                             const currentValue = permissionChanges[feature.featureName]?.[role];
                             const displayValue = currentValue !== undefined ? currentValue : isEnabled;
+                            const isOwnerRole = role === "OWNER";
 
                             const roleDescriptions: Record<string, string> = {
                               OWNER: "Full access to all features",
@@ -965,6 +966,7 @@ export default function SettingsPage() {
                                 <input
                                   type="checkbox"
                                   checked={displayValue}
+                                  disabled={isOwnerRole}
                                   onChange={(e) => {
                                     setPermissionChanges((prev) => ({
                                       ...prev,
@@ -975,7 +977,7 @@ export default function SettingsPage() {
                                     }));
                                     setPermissionHasChanges(true);
                                   }}
-                                  className="w-5 h-5 rounded border-border text-primary cursor-pointer"
+                                  className={`w-5 h-5 rounded border-border text-primary ${isOwnerRole ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                                 />
                                 <div className="text-center">
                                   <p className="text-xs font-medium text-foreground">{role}</p>

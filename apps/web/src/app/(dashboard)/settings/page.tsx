@@ -938,6 +938,8 @@ export default function SettingsPage() {
                         PROJECT_REPORTS_VIEW: "Access test reports and analytics",
                         PROJECT_COMMENTS_CREATE: "Add comments to test cases and cycles",
                         PROJECT_FILTERS_MANAGE: "Create and manage custom filters",
+                        WORKSPACE_ROLES_MANAGE: "Create, edit, and delete custom workspace roles",
+                        WORKSPACE_PERMISSIONS_MANAGE: "Assign and modify workspace permissions for roles",
                         JIRA_INTEGRATION: "Connect and sync with JIRA projects",
                       };
 

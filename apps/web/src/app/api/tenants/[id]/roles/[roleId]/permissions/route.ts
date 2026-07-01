@@ -15,13 +15,13 @@ const updatePermissionsSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { tenantId: string; roleId: string } }
+  { params }: { params: { id: string; roleId: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     // Verify role belongs to this tenant
     const role = await prisma.customRole.findUnique({
@@ -37,7 +37,7 @@ export async function GET(
       },
     });
 
-    if (!role || role.tenantId !== params.tenantId) {
+    if (!role || role.tenantId !== params.id) {
       return err("Role not found", 404);
     }
 
@@ -57,19 +57,19 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { tenantId: string; roleId: string } }
+  { params }: { params: { id: string; roleId: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     // Check if user is tenant owner/admin
     const membership = await prisma.tenantMember.findUnique({
       where: {
         tenantId_userId: {
-          tenantId: params.tenantId,
+          tenantId: params.id,
           userId: (caller as any).userId,
         },
       },
@@ -84,7 +84,7 @@ export async function PUT(
       where: { id: params.roleId },
     });
 
-    if (!role || role.tenantId !== params.tenantId) {
+    if (!role || role.tenantId !== params.id) {
       return err("Role not found", 404);
     }
 
@@ -96,7 +96,7 @@ export async function PUT(
 
     // Get tenant-level feature flags
     const tenantFeatures = await prisma.featureFlag.findMany({
-      where: { tenantId: params.tenantId },
+      where: { tenantId: params.id },
       select: { id: true, featureName: true },
     });
 

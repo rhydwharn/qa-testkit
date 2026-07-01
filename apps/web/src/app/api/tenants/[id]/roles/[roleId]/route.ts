@@ -11,19 +11,19 @@ const updateRoleSchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { tenantId: string; roleId: string } }
+  { params }: { params: { id: string; roleId: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     // Check if user is tenant owner/admin
     const membership = await prisma.tenantMember.findUnique({
       where: {
         tenantId_userId: {
-          tenantId: params.tenantId,
+          tenantId: params.id,
           userId: (caller as any).userId,
         },
       },
@@ -38,7 +38,7 @@ export async function PUT(
       where: { id: params.roleId },
     });
 
-    if (!role || role.tenantId !== params.tenantId) {
+    if (!role || role.tenantId !== params.id) {
       return err("Role not found", 404);
     }
 
@@ -51,7 +51,7 @@ export async function PUT(
     // If name is being updated, check for duplicates
     if (name && name !== role.name) {
       const existing = await prisma.customRole.findFirst({
-        where: { tenantId: params.tenantId, name },
+        where: { tenantId: params.id, name },
       });
       if (existing) return err("A role with this name already exists", 409);
     }
@@ -73,19 +73,19 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { tenantId: string; roleId: string } }
+  { params }: { params: { id: string; roleId: string } }
 ) {
   try {
     const { error, caller } = await requireTenantAccess(req);
     if (error) return error;
     if (!caller) return err("Unauthorized", 401);
-    if (caller.tenantId !== params.tenantId) return err("Forbidden", 403);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     // Check if user is tenant owner/admin
     const membership = await prisma.tenantMember.findUnique({
       where: {
         tenantId_userId: {
-          tenantId: params.tenantId,
+          tenantId: params.id,
           userId: (caller as any).userId,
         },
       },
@@ -100,7 +100,7 @@ export async function DELETE(
       where: { id: params.roleId },
     });
 
-    if (!role || role.tenantId !== params.tenantId) {
+    if (!role || role.tenantId !== params.id) {
       return err("Role not found", 404);
     }
 

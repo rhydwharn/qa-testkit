@@ -27,6 +27,8 @@ export type FeatureName =
   | "PROJECT_REPORTS_VIEW"
   | "PROJECT_COMMENTS_CREATE"
   | "PROJECT_FILTERS_MANAGE"
+  | "WORKSPACE_ROLES_MANAGE"
+  | "WORKSPACE_PERMISSIONS_MANAGE"
   | "JIRA_INTEGRATION";
 
 /**
@@ -417,6 +419,8 @@ export async function initializeWorkspaceFeatures(tenantId: string): Promise<voi
       "PROJECT_REPORTS_VIEW",
       "PROJECT_COMMENTS_CREATE",
       "PROJECT_FILTERS_MANAGE",
+      "WORKSPACE_ROLES_MANAGE",
+      "WORKSPACE_PERMISSIONS_MANAGE",
       "JIRA_INTEGRATION",
     ];
 

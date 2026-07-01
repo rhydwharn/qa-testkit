@@ -80,7 +80,7 @@ export async function POST(
       },
     });
 
-    // Initialize permissions for all 27 features (enabled by default)
+    // Initialize permissions for all 29 features (enabled by default)
     const features = [
       "TEST_CASE_CREATE", "TEST_CASE_READ", "TEST_CASE_UPDATE", "TEST_CASE_DELETE",
       "TEST_CASE_CLONE", "TEST_CASE_IMPORT", "TEST_CASE_EXPORT", "TEST_CASE_ARCHIVE",
@@ -89,7 +89,8 @@ export async function POST(
       "TEST_PLAN_CREATE", "TEST_PLAN_READ", "TEST_PLAN_UPDATE", "TEST_PLAN_DELETE",
       "TEST_PLAN_ARCHIVE", "PROJECT_SETTINGS_MANAGE", "PROJECT_MEMBERS_MANAGE",
       "PROJECT_AUTOMATION_SUBMIT", "PROJECT_REPORTS_VIEW", "PROJECT_COMMENTS_CREATE",
-      "PROJECT_FILTERS_MANAGE", "JIRA_INTEGRATION",
+      "PROJECT_FILTERS_MANAGE", "WORKSPACE_ROLES_MANAGE", "WORKSPACE_PERMISSIONS_MANAGE",
+      "JIRA_INTEGRATION",
     ];
 
     for (const feature of features) {

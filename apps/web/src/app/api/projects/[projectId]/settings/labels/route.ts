@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -12,10 +12,8 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
   const caller = await requireAuth(req);
   if (!caller) return err("Unauthorized", 401);
 
-  const membership = await prisma.projectMember.findUnique({
-    where: { projectId_userId: { projectId: params.projectId, userId: caller.userId } },
-  });
-  if (!membership) return err("Forbidden", 403);
+  const access = await verifyProjectAccess(caller.userId, params.projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const labels = await prisma.label.findMany({
     where: { projectId: params.projectId },

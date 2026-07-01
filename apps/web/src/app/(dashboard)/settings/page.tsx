@@ -41,6 +41,7 @@ import { useTenant, broadcastTenantDisplay } from "@/hooks/use-tenant";
 import { EditableSettingRow } from "@/components/EditableSettingRow";
 import { CreateRoleDialog } from "@/components/CreateRoleDialog";
 import { EditRoleDialog } from "@/components/EditRoleDialog";
+import { RolePermissionsEditor } from "@/components/RolePermissionsEditor";
 import { cn } from "@/lib/utils";
 
 interface ApiKey {
@@ -1041,23 +1042,53 @@ export default function SettingsPage() {
             {/* ── Workspace Roles ── */}
             {section === "workspace-roles" && (
               <div className="max-w-4xl">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-base font-semibold mb-1">Custom Roles</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Create and manage custom roles for your workspace members
-                    </p>
-                  </div>
-                  {tenantRole === "OWNER" || tenantRole === "ADMIN" ? (
-                    <CreateRoleDialog tenantId={tenantId} onRoleCreated={() => {
-                      setRolesLoading(true);
-                      fetch(`/api/tenants/${tenantId}/roles`)
-                        .then((r) => r.json())
-                        .then((data) => { setRoles(data.roles || []); setRolesLoading(false); })
-                        .catch(() => setRolesLoading(false));
-                    }} />
-                  ) : null}
-                </div>
+                {(() => {
+                  const editingRoleId = searchParams.get("edit");
+                  const editingRole = editingRoleId ? roles.find((r: any) => r.id === editingRoleId) : null;
+
+                  if (editingRole) {
+                    return (
+                      <div>
+                        <div className="mb-6 flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.history.pushState(null, "", "/settings?section=workspace-roles")}
+                            className="gap-2"
+                          >
+                            ← Back to roles
+                          </Button>
+                          <div>
+                            <h2 className="text-base font-semibold">{editingRole.name} - Manage Permissions</h2>
+                            {editingRole.description && (
+                              <p className="text-sm text-muted-foreground">{editingRole.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <RolePermissionsEditor roleId={editingRole.id} tenantId={tenantId} />
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-6">
+                        <div>
+                          <h2 className="text-base font-semibold mb-1">Custom Roles</h2>
+                          <p className="text-sm text-muted-foreground">
+                            Create and manage custom roles for your workspace members
+                          </p>
+                        </div>
+                        {tenantRole === "OWNER" || tenantRole === "ADMIN" ? (
+                          <CreateRoleDialog tenantId={tenantId} onRoleCreated={() => {
+                            setRolesLoading(true);
+                            fetch(`/api/tenants/${tenantId}/roles`)
+                              .then((r) => r.json())
+                              .then((data) => { setRoles(data.roles || []); setRolesLoading(false); })
+                              .catch(() => setRolesLoading(false));
+                          }} />
+                        ) : null}
+                      </div>
 
                 {rolesLoading ? (
                   <div className="flex justify-center py-8">
@@ -1124,7 +1155,10 @@ export default function SettingsPage() {
                       </div>
                     ))}
                   </div>
-                )}
+                    )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 

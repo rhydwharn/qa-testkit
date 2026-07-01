@@ -484,7 +484,7 @@ export default function SettingsPage() {
         <div className="px-2 space-y-0.5">
           <NavItem id="workspace-general" icon={Building2} label="General" />
           <NavItem id="workspace-members" icon={UserPlus} label="Members" />
-          <NavItem id="workspace-permissions" icon={Shield} label="Permissions" />
+          <a href="/settings/workspace/permissions" className={cn("w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors text-left", section === "workspace-permissions" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/60")}><Shield className="w-4 h-4" /><span>Permissions</span></a>
         </div>
 
         <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -738,9 +738,7 @@ export default function SettingsPage() {
                               </span>
                             </td>
 
-            {section === "workspace-permissions" && (
-              <PermissionsRedirect />
-            )}
+            
                             <td className="px-4 py-2.5 text-right">
                               {m.role !== "OWNER" && ["OWNER", "ADMIN"].includes(tenantRole ?? "") && (
                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeMember(m.user.id)}>

@@ -441,6 +441,14 @@ export default function SettingsPage() {
 
   const projectSections: SettingsSection[] = ["environments", "builds", "labels", "priorities", "components", "members"];
 
+
+  function PermissionsRedirect() {
+    useEffect(() => {
+      window.location.href = "/settings/workspace/permissions";
+    }, []);
+    return <div className="text-center py-12"><p className="text-gray-500">Redirecting to permissions...</p></div>;
+  }
+
   function NavItem({
     id,
     icon: Icon,
@@ -731,18 +739,7 @@ export default function SettingsPage() {
                             </td>
 
             {section === "workspace-permissions" && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Workspace Permissions</h2>
-                <p className="text-gray-600 mb-4">
-                  Configure default feature permissions for your workspace.
-                </p>
-                <a
-                  href="/settings/workspace/permissions"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Go to Permissions Settings →
-                </a>
-              </div>
+              <PermissionsRedirect />
             )}
                             <td className="px-4 py-2.5 text-right">
                               {m.role !== "OWNER" && ["OWNER", "ADMIN"].includes(tenantRole ?? "") && (

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const inviteSchema = z.object({
@@ -36,6 +37,13 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     where: { projectId_userId: { projectId: params.projectId, userId: caller.userId } },
   });
   if (!membership) return err("Forbidden", 403);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    params.projectId,
+    "PROJECT_MEMBERS_MANAGE"
+  );
+  if (permissionError) return permissionError;
 
   const body = await req.json().catch(() => null);
   if (!body) return err("Invalid JSON");

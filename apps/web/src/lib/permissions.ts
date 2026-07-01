@@ -51,30 +51,60 @@ export async function canUserDoAction(
     });
 
     if (!projectMember) {
-      // Fetch feature flag for audit logging (even though access will be denied)
-      const flagForLog = await prisma.featureFlag.findFirst({
-        where: { projectId, featureName },
-        select: { id: true },
+      // Check if user is a workspace member and grant workspace-level access
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { tenantId: true },
       });
-      await logPermissionCheck(userId, projectId, null, flagForLog?.id || "flag-not-found", featureName, "DENIED", "Not a project member");
-      return false;
+
+      if (!project) {
+        const flagForLog = await prisma.featureFlag.findFirst({
+          where: { projectId, featureName },
+          select: { id: true },
+        });
+        await logPermissionCheck(userId, projectId, null, flagForLog?.id || "flag-not-found", featureName, "DENIED", "Project not found");
+        return false;
+      }
+
+      // Check if user is a workspace member
+      const workspaceMember = await prisma.tenantMember.findUnique({
+        where: {
+          tenantId_userId: {
+            tenantId: project.tenantId,
+            userId,
+          },
+        },
+      });
+
+      if (!workspaceMember) {
+        const flagForLog = await prisma.featureFlag.findFirst({
+          where: { projectId, featureName },
+          select: { id: true },
+        });
+        await logPermissionCheck(userId, projectId, project.tenantId, flagForLog?.id || "flag-not-found", featureName, "DENIED", "Not a workspace or project member");
+        return false;
+      }
+
+      // Workspace member - check workspace-level permissions (fall through to workspace permission logic below)
+      // Continue to check workspace permissions for this feature
     }
 
-    // Get feature permission for this role
-    const featureFlag = await prisma.featureFlag.findFirst({
-      where: {
-        projectId,
-        featureName,
-      },
-      include: {
-        rolePermissions: true,
-      },
-    });
+    // Get feature permission for this role (only if user is a project member)
+    if (projectMember) {
+      const featureFlag = await prisma.featureFlag.findFirst({
+        where: {
+          projectId,
+          featureName,
+        },
+        include: {
+          rolePermissions: true,
+        },
+      });
 
-    // If project-specific flag exists, check permissions
-    if (featureFlag) {
-      // Check custom role permissions first (if assigned)
-      if (projectMember.customRoleId) {
+      // If project-specific flag exists, check permissions
+      if (featureFlag) {
+        // Check custom role permissions first (if assigned)
+        if (projectMember.customRoleId) {
         const customRolePermission = featureFlag.rolePermissions.find(
           (rp) => rp.customRoleId === projectMember.customRoleId
         );
@@ -122,10 +152,12 @@ export async function canUserDoAction(
         isAllowed ? "ALLOWED" : "DENIED",
         isAllowed ? "Feature enabled, no role restriction" : "Feature disabled"
       );
-      return isAllowed;
+        return isAllowed;
+        }
+      }
     }
 
-    // If no project-specific flag, check workspace default
+    // Check workspace-level permissions (for workspace members or as fallback)
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { tenantId: true },

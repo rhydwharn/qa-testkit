@@ -112,6 +112,7 @@ export async function POST(
         data: {
           featureFlagId: featureFlag.id,
           customRoleId: role.id,
+          roleType: "TENANT_ROLE",
           isEnabled: true,
         },
       });

@@ -23,7 +23,14 @@ export async function GET(
   if (!caller) return err("Unauthorized", 401);
 
   try {
-    // Verify user is project member
+    const project = await prisma.project.findUnique({
+      where: { id: params.projectId },
+      select: { tenantId: true },
+    });
+
+    if (!project) return err("Project not found", 404);
+
+    // Check if user is project member (OWNER/LEAD can manage) OR tenant owner/admin
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         projectId_userId: {
@@ -33,14 +40,22 @@ export async function GET(
       },
     });
 
-    if (!projectMember) return err("Not a project member", 403);
-
-    const project = await prisma.project.findUnique({
-      where: { id: params.projectId },
-      select: { tenantId: true },
+    const tenantMember = await prisma.tenantMember.findUnique({
+      where: {
+        tenantId_userId: {
+          tenantId: project.tenantId,
+          userId: (caller as any).userId,
+        },
+      },
     });
 
-    if (!project) return err("Project not found", 404);
+    // Allow if: project member, OR tenant owner/admin
+    const isProjectMember = !!projectMember;
+    const isTenantAdmin = tenantMember && ["OWNER", "ADMIN"].includes(tenantMember.role);
+
+    if (!isProjectMember && !isTenantAdmin) {
+      return err("Not a project member or workspace admin", 403);
+    }
 
     // Get project-specific feature flags
     const projectFlags = await prisma.featureFlag.findMany({
@@ -89,7 +104,14 @@ export async function PUT(
   if (!caller) return err("Unauthorized", 401);
 
   try {
-    // Verify user is OWNER or LEAD
+    const project = await prisma.project.findUnique({
+      where: { id: params.projectId },
+      select: { tenantId: true },
+    });
+
+    if (!project) return err("Project not found", 404);
+
+    // Check if user is project member with OWNER/LEAD role OR tenant owner/admin
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         projectId_userId: {
@@ -99,7 +121,20 @@ export async function PUT(
       },
     });
 
-    if (!projectMember || !["OWNER", "LEAD"].includes(projectMember.role)) {
+    const tenantMember = await prisma.tenantMember.findUnique({
+      where: {
+        tenantId_userId: {
+          tenantId: project.tenantId,
+          userId: (caller as any).userId,
+        },
+      },
+    });
+
+    // Allow if: project OWNER/LEAD, OR tenant OWNER/ADMIN
+    const isProjectOwnerOrLead = projectMember && ["OWNER", "LEAD"].includes(projectMember.role);
+    const isTenantAdmin = tenantMember && ["OWNER", "ADMIN"].includes(tenantMember.role);
+
+    if (!isProjectOwnerOrLead && !isTenantAdmin) {
       return err("Forbidden", 403);
     }
 

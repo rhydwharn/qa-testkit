@@ -9,6 +9,8 @@ import { Plus, Search, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 interface TestPlan {
   id: string;
   key: string;
@@ -31,6 +33,22 @@ export default function PlansPage() {
   const [showArchived, setShowArchived] = useState(false);
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId") ?? "";
+  const router = useRouter();
+
+  // Auto-select first project if not already selected
+  useEffect(() => {
+    if (!projectId) {
+      fetch('/api/projects')
+        .then(r => r.json())
+        .then(data => {
+          const projects = Array.isArray(data) ? data : [];
+          if (projects.length > 0) {
+            router.push(`/plans?projectId=${projects[0].id}`);
+          }
+        })
+        .catch(err => console.error('Failed to fetch projects:', err));
+    }
+  }, [projectId, router]);
 
   useEffect(() => {
     if (!projectId) { setLoading(false); return; }

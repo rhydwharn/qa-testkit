@@ -1865,6 +1865,21 @@ export default function CasesPage() {
       .catch((err) => { console.error("Fetch failed:", err); });
   }, [projectId]);
 
+  // Auto-select first project if not already selected
+  useEffect(() => {
+    if (!projectId) {
+      fetch('/api/projects')
+        .then(r => r.json())
+        .then(data => {
+          const projects = Array.isArray(data) ? data : [];
+          if (projects.length > 0) {
+            router.push(`/cases?projectId=${projects[0].id}`);
+          }
+        })
+        .catch(err => console.error('Failed to fetch projects:', err));
+    }
+  }, [projectId, router]);
+
   useEffect(() => { loadCases(); loadFolders(); }, [loadCases, loadFolders]);
 
   const filtered = cases.filter((c) => {

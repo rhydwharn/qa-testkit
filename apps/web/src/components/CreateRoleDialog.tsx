@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface CreateRoleDialogProps {
-  tenantId: string;
+  tenantId: string | null;
   onRoleCreated: () => void;
 }
 
@@ -28,6 +28,11 @@ export function CreateRoleDialog({ tenantId, onRoleCreated }: CreateRoleDialogPr
 
   async function handleCreate() {
     setError("");
+
+    if (!tenantId) {
+      setError("Workspace not loaded");
+      return;
+    }
 
     if (!name.trim()) {
       setError("Role name is required");

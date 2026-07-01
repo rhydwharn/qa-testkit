@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [tenantMode, setTenantMode] = useState<TenantMode>(null);
   const [tenantName, setTenantName] = useState("");
-  const [tenantId, setTenantId] = useState("");
+  const [joinWorkspaceName, setJoinWorkspaceName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,8 +42,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (tenantMode === "join" && !tenantId.trim()) {
-      setError("Please enter a workspace ID.");
+    if (tenantMode === "join" && !joinWorkspaceName.trim()) {
+      setError("Please enter a workspace name.");
       return;
     }
 
@@ -54,7 +54,7 @@ export default function RegisterPage() {
       email,
       password,
       tenantMode,
-      ...(tenantMode === "create" ? { tenantName } : { tenantId }),
+      ...(tenantMode === "create" ? { tenantName } : { tenantName: joinWorkspaceName }),
     };
 
     const res = await fetch("/api/auth/register", {
@@ -214,13 +214,13 @@ export default function RegisterPage() {
 
                 {tenantMode === "join" && (
                   <div className="space-y-1.5">
-                    <Label htmlFor="tenantId">Workspace ID</Label>
+                    <Label htmlFor="joinWorkspaceName">Workspace name</Label>
                     <Input
-                      id="tenantId"
+                      id="joinWorkspaceName"
                       type="text"
-                      placeholder="Enter workspace ID"
-                      value={tenantId}
-                      onChange={(e) => setTenantId(e.target.value)}
+                      placeholder="e.g., Acme Corp QA"
+                      value={joinWorkspaceName}
+                      onChange={(e) => setJoinWorkspaceName(e.target.value)}
                       required
                       autoFocus
                     />

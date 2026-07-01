@@ -9,8 +9,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
   tenantMode: z.enum(["create", "join"]),
-  tenantName: z.string().min(1).max(100).optional(),
-  tenantId: z.string().min(1).optional(),
+  tenantName: z.string().min(1).max(100),
 });
 
 export async function POST(req: NextRequest) {
@@ -31,7 +30,6 @@ export async function POST(req: NextRequest) {
 
     if (tenantMode === "create") {
       // Create new tenant and user as OWNER
-      if (!tenantName) return err("Workspace name is required", 400);
 
       // Generate slug from tenant name
       const slug = tenantName
@@ -69,13 +67,13 @@ export async function POST(req: NextRequest) {
 
       return ok(user, 201);
     } else if (tenantMode === "join") {
-      // Join existing tenant
-      if (!tenantId) return err("Workspace ID is required", 400);
-
-      // Verify tenant exists
-      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+      // Join existing tenant by name
+      // Verify tenant exists by name
+      const tenant = await prisma.tenant.findFirst({
+        where: { name: tenantName },
+      });
       if (!tenant) {
-        return err("Workspace not found. Please check the workspace ID.", 404);
+        return err("Workspace not found. Please check the workspace name and try again.", 404);
       }
 
       // Create user and add to tenant as MEMBER
@@ -87,7 +85,7 @@ export async function POST(req: NextRequest) {
           role: "TESTER",
           tenantMembers: {
             create: {
-              tenantId,
+              tenantId: tenant.id,
               role: "MEMBER",
             },
           },

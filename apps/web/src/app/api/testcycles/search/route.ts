@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const schema = z.object({
@@ -24,6 +25,14 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 100);
 
   if (!projectId) return err("projectId is required");
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    projectId,
+    "TEST_CYCLE_READ"
+  );
+  if (permissionError) return permissionError;
+
   if (!query.trim()) return ok([]);
 
   try {
@@ -66,6 +75,13 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return err(parsed.error.message);
 
   const { projectId, query, status, startDate, endDate, page, pageSize } = parsed.data;
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    projectId,
+    "TEST_CYCLE_READ"
+  );
+  if (permissionError) return permissionError;
 
   const where: Record<string, unknown> = { projectId };
   if (query) where.summary = { contains: query, mode: "insensitive" };

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantAccess } from "@/lib/api-helpers";
 import { err, ok } from "@/lib/api-helpers";
+import { initializeWorkspaceFeatures } from "@/lib/permissions";
 import { z } from "zod";
 
 const updatePermissionsSchema = z.object({
@@ -18,13 +19,11 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const authError = await requireTenantAccess(req, params.id);
-  if (authError) return authError;
-
   try {
-    // Check if user is OWNER or ADMIN
-    const caller = await requireTenantAccess(req, params.id);
+    const { error, caller } = await requireTenantAccess(req);
+    if (error) return error;
     if (!caller) return err("Unauthorized", 401);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     const membership = await prisma.tenantMember.findUnique({
       where: {
@@ -40,13 +39,32 @@ export async function GET(
     }
 
     // Get all workspace feature flags
-    const featureFlags = await prisma.featureFlag.findMany({
+    let featureFlags = await prisma.featureFlag.findMany({
       where: { tenantId: params.id },
       include: { rolePermissions: true },
     });
 
+    // Initialize features if none exist
+    if (featureFlags.length === 0) {
+      await initializeWorkspaceFeatures(params.id);
+      featureFlags = await prisma.featureFlag.findMany({
+        where: { tenantId: params.id },
+        include: { rolePermissions: true },
+      });
+    }
+
+    // Deduplicate features by featureName (keep first occurrence)
+    const seenFeatures = new Set<string>();
+    const uniqueFeatureFlags = featureFlags.filter((flag) => {
+      if (seenFeatures.has(flag.featureName)) {
+        return false;
+      }
+      seenFeatures.add(flag.featureName);
+      return true;
+    });
+
     return ok({
-      featureFlags: featureFlags.map((flag) => ({
+      featureFlags: uniqueFeatureFlags.map((flag) => ({
         id: flag.id,
         featureName: flag.featureName,
         description: flag.description,
@@ -68,12 +86,11 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const authError = await requireTenantAccess(req, params.id);
-  if (authError) return authError;
-
   try {
-    const caller = await requireTenantAccess(req, params.id);
+    const { error, caller } = await requireTenantAccess(req);
+    if (error) return error;
     if (!caller) return err("Unauthorized", 401);
+    if (caller.tenantId !== params.id) return err("Forbidden", 403);
 
     const membership = await prisma.tenantMember.findUnique({
       where: {

@@ -55,6 +55,7 @@ interface ApiKey {
 type SettingsSection =
   | "workspace-general"
   | "workspace-members"
+  | "workspace-permissions"
   | "new-project"
   | "api-keys"
   | "jira"
@@ -78,7 +79,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const param = searchParams.get("section") as SettingsSection | null;
     const valid: SettingsSection[] = [
-      "workspace-general", "workspace-members", "new-project", "api-keys", "jira",
+      "workspace-general", "workspace-members", "workspace-permissions", "new-project", "api-keys", "jira",
       "environments", "builds", "labels", "priorities", "components", "members",
     ];
     if (param && valid.includes(param)) setSection(param);
@@ -107,6 +108,7 @@ export default function SettingsPage() {
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedProjectId, setCopiedProjectId] = useState<string | null>(null);
 
   // Environments
   const [envs, setEnvs] = useState<{ id: string; name: string }[]>([]);
@@ -157,6 +159,13 @@ export default function SettingsPage() {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
 
+  // Workspace Permissions
+  const [permissionFeatures, setPermissionFeatures] = useState<any[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [permissionChanges, setPermissionChanges] = useState<Record<string, Record<string, boolean>>>({});
+  const [permissionHasChanges, setPermissionHasChanges] = useState(false);
+  const [permissionSaving, setPermissionSaving] = useState(false);
+
   // Workspace General
   const [wsName, setWsName] = useState("");
   const [savingWs, setSavingWs] = useState(false);
@@ -173,6 +182,23 @@ export default function SettingsPage() {
       .then((data) => { if (Array.isArray(data)) setApiKeys(data); setKeysLoading(false); })
       .catch(() => setKeysLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!tenantId || section !== "workspace-permissions") {
+      return;
+    }
+    setPermissionsLoading(true);
+    fetch(`/api/tenants/${tenantId}/settings/permissions`)
+      .then((r) => r.json())
+      .then((data) => {
+        setPermissionFeatures(data.featureFlags || []);
+        setPermissionsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch permissions failed:", err);
+        setPermissionsLoading(false);
+      });
+  }, [tenantId, section]);
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -439,6 +465,12 @@ export default function SettingsPage() {
     }
   }
 
+  function copyProjectId(projectId: string) {
+    navigator.clipboard.writeText(projectId);
+    setCopiedProjectId(projectId);
+    setTimeout(() => setCopiedProjectId(null), 2000);
+  }
+
   const projectSections: SettingsSection[] = ["environments", "builds", "labels", "priorities", "components", "members"];
 
 
@@ -484,7 +516,7 @@ export default function SettingsPage() {
         <div className="px-2 space-y-0.5">
           <NavItem id="workspace-general" icon={Building2} label="General" />
           <NavItem id="workspace-members" icon={UserPlus} label="Members" />
-          <Link href="/settings/workspace/permissions" className={cn("w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors text-left", "text-muted-foreground hover:text-foreground hover:bg-muted/60")}><Shield className="w-4 h-4" /><span>Permissions</span></Link>
+          <NavItem id="workspace-permissions" icon={Shield} label="Permissions" />
         </div>
 
         <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -829,6 +861,154 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* ── Workspace Permissions ── */}
+            {section === "workspace-permissions" && (
+              <div className="max-w-4xl">
+                <h2 className="text-base font-semibold mb-1">Workspace Permissions</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Configure default feature access for all workspace members
+                </p>
+
+                {permissionsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : permissionFeatures.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-8">No permissions configured.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {(() => {
+                      // Deduplicate features by featureName
+                      const seen = new Set<string>();
+                      const uniqueFeatures = permissionFeatures.filter((feature: any) => {
+                        if (seen.has(feature.featureName)) return false;
+                        seen.add(feature.featureName);
+                        return true;
+                      });
+
+                      const featureDescriptions: Record<string, string> = {
+                        TEST_CASE_CREATE: "Create new test cases for your projects",
+                        TEST_CASE_READ: "View and browse existing test cases",
+                        TEST_CASE_UPDATE: "Edit and modify test case details",
+                        TEST_CASE_DELETE: "Permanently remove test cases",
+                        TEST_CASE_CLONE: "Duplicate test cases to reuse configurations",
+                        TEST_CASE_IMPORT: "Import test cases from external sources",
+                        TEST_CASE_EXPORT: "Export test cases for backup or sharing",
+                        TEST_CASE_ARCHIVE: "Archive test cases for historical records",
+                        TEST_CYCLE_CREATE: "Create new test execution cycles",
+                        TEST_CYCLE_READ: "View test cycle details and progress",
+                        TEST_CYCLE_UPDATE: "Modify test cycle settings and schedules",
+                        TEST_CYCLE_DELETE: "Remove test cycles",
+                        TEST_CYCLE_EXECUTE: "Run tests and record results",
+                        TEST_CYCLE_CLONE: "Duplicate test cycles with all configurations",
+                        TEST_CYCLE_ARCHIVE: "Archive completed test cycles",
+                        TEST_PLAN_CREATE: "Create new test plans",
+                        TEST_PLAN_READ: "View test plan details and coverage",
+                        TEST_PLAN_UPDATE: "Edit test plan configurations",
+                        TEST_PLAN_DELETE: "Remove test plans",
+                        TEST_PLAN_ARCHIVE: "Archive test plans for reference",
+                        PROJECT_SETTINGS_MANAGE: "Manage project configuration and settings",
+                        PROJECT_MEMBERS_MANAGE: "Invite and manage project team members",
+                        PROJECT_AUTOMATION_SUBMIT: "Submit automated test results",
+                        PROJECT_REPORTS_VIEW: "Access test reports and analytics",
+                        PROJECT_COMMENTS_CREATE: "Add comments to test cases and cycles",
+                        PROJECT_FILTERS_MANAGE: "Create and manage custom filters",
+                        JIRA_INTEGRATION: "Connect and sync with JIRA projects",
+                      };
+
+                      return uniqueFeatures.map((feature: any) => (
+                      <div key={feature.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-foreground capitalize">{feature.featureName.replace(/_/g, " ")}</p>
+                          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{featureDescriptions[feature.featureName] || feature.description}</p>
+                        </div>
+                        <div className="flex items-center gap-8 ml-4">
+                          {["OWNER", "ADMIN", "MEMBER"].map((role) => {
+                            const permission = feature.rolePermissions.find((rp: any) => rp.roleName === role);
+                            const isEnabled = permission?.isEnabled ?? true;
+                            const currentValue = permissionChanges[feature.featureName]?.[role];
+                            const displayValue = currentValue !== undefined ? currentValue : isEnabled;
+
+                            const roleDescriptions: Record<string, string> = {
+                              OWNER: "Full access to all features",
+                              ADMIN: "Administrative access",
+                              MEMBER: "Standard member access",
+                            };
+
+                            return (
+                              <div key={role} className="flex flex-col items-center gap-2 min-w-max">
+                                <input
+                                  type="checkbox"
+                                  checked={displayValue}
+                                  onChange={(e) => {
+                                    setPermissionChanges((prev) => ({
+                                      ...prev,
+                                      [feature.featureName]: {
+                                        ...(prev[feature.featureName] || {}),
+                                        [role]: e.target.checked,
+                                      },
+                                    }));
+                                    setPermissionHasChanges(true);
+                                  }}
+                                  className="w-5 h-5 rounded border-border text-primary cursor-pointer"
+                                />
+                                <div className="text-center">
+                                  <p className="text-xs font-medium text-foreground">{role}</p>
+                                  <p className="text-[10px] text-muted-foreground">{roleDescriptions[role]}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      ));
+                    })()}
+                  </div>
+                )}
+
+                {permissionHasChanges && (
+                  <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-border">
+                    <Button variant="outline" onClick={() => {
+                      setPermissionChanges({});
+                      setPermissionHasChanges(false);
+                    }} disabled={permissionSaving}>
+                      Cancel
+                    </Button>
+                    <Button onClick={async () => {
+                      setPermissionSaving(true);
+                      try {
+                        const permissions = Object.entries(permissionChanges).map(([featureName, roles]) =>
+                          Object.entries(roles).map(([roleName, isEnabled]) => ({
+                            featureName,
+                            roleName,
+                            isEnabled,
+                          }))
+                        ).flat();
+
+                        const response = await fetch(`/api/tenants/${tenantId}/settings/permissions`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ permissions }),
+                        });
+
+                        if (!response.ok) throw new Error("Failed to save");
+                        setPermissionChanges({});
+                        setPermissionHasChanges(false);
+                        console.log("Permissions saved");
+                      } catch (error) {
+                        console.error("Error saving permissions:", error);
+                      } finally {
+                        setPermissionSaving(false);
+                      }
+                    }} disabled={permissionSaving}>
+                      {permissionSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      {permissionSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── API Keys ── */}
             {section === "api-keys" && (
               <div className="max-w-xl">
@@ -898,10 +1078,29 @@ export default function SettingsPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1 flex-wrap">
                             <code>{k.prefix}•••••</code>
                             {" · "}Created {new Date(k.createdAt).toLocaleDateString()}
                             {k.lastUsedAt && ` · Last used ${new Date(k.lastUsedAt).toLocaleDateString()}`}
+                            {k.projectId && (
+                              <>
+                                {" · "}
+                                <span className="inline-flex items-center gap-0.5">
+                                  Project ID: <code className="text-xs">{k.projectId}</code>
+                                  <button
+                                    onClick={() => copyProjectId(k.projectId!)}
+                                    title="Copy Project ID"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted/50 transition-opacity"
+                                  >
+                                    {copiedProjectId === k.projectId ? (
+                                      <Check className="h-4 w-4 text-green-600" />
+                                    ) : (
+                                      <Copy className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </span>
+                              </>
+                            )}
                           </p>
                         </div>
                         <Button

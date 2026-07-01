@@ -19,7 +19,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const caller = await requireTenantAccess(req, params.projectId);
+  const { error, caller } = await requireTenantAccess(req, params.projectId);
+  if (error) return error;
   if (!caller) return err("Unauthorized", 401);
 
   try {
@@ -100,7 +101,8 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const caller = await requireTenantAccess(req, params.projectId);
+  const { error, caller } = await requireTenantAccess(req, params.projectId);
+  if (error) return error;
   if (!caller) return err("Unauthorized", 401);
 
   try {

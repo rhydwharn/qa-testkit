@@ -300,6 +300,72 @@ export async function initializeProjectFeatures(projectId: string): Promise<void
 }
 
 /**
+ * Initialize default feature flags for a new workspace
+ * All features enabled for all roles by default
+ */
+export async function initializeWorkspaceFeatures(tenantId: string): Promise<void> {
+  try {
+    const features: FeatureName[] = [
+      "TEST_CASE_CREATE",
+      "TEST_CASE_READ",
+      "TEST_CASE_UPDATE",
+      "TEST_CASE_DELETE",
+      "TEST_CASE_CLONE",
+      "TEST_CASE_IMPORT",
+      "TEST_CASE_EXPORT",
+      "TEST_CASE_ARCHIVE",
+      "TEST_CYCLE_CREATE",
+      "TEST_CYCLE_READ",
+      "TEST_CYCLE_UPDATE",
+      "TEST_CYCLE_DELETE",
+      "TEST_CYCLE_EXECUTE",
+      "TEST_CYCLE_CLONE",
+      "TEST_CYCLE_ARCHIVE",
+      "TEST_PLAN_CREATE",
+      "TEST_PLAN_READ",
+      "TEST_PLAN_UPDATE",
+      "TEST_PLAN_DELETE",
+      "TEST_PLAN_ARCHIVE",
+      "PROJECT_SETTINGS_MANAGE",
+      "PROJECT_MEMBERS_MANAGE",
+      "PROJECT_AUTOMATION_SUBMIT",
+      "PROJECT_REPORTS_VIEW",
+      "PROJECT_COMMENTS_CREATE",
+      "PROJECT_FILTERS_MANAGE",
+      "JIRA_INTEGRATION",
+    ];
+
+    const roles = ["OWNER", "ADMIN", "MEMBER"];
+
+    for (const feature of features) {
+      const flag = await prisma.featureFlag.create({
+        data: {
+          tenantId,
+          featureName: feature,
+          description: `${feature.replace(/_/g, " ")} feature`,
+          isEnabled: true,
+        },
+      });
+
+      // Create role permissions (all enabled by default)
+      for (const role of roles) {
+        await prisma.rolePermission.create({
+          data: {
+            featureFlagId: flag.id,
+            roleType: "TENANT_ROLE",
+            roleName: role,
+            isEnabled: true,
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.error("[initializeWorkspaceFeatures] Error initializing features:", error);
+    // Don't throw - this should not block permission setup
+  }
+}
+
+/**
  * Check if user can manage project settings
  */
 export async function canManageProjectSettings(userId: string, projectId: string): Promise<boolean> {

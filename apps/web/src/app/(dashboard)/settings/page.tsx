@@ -39,6 +39,8 @@ import {
 import { useProject } from "@/hooks/use-project";
 import { useTenant, broadcastTenantDisplay } from "@/hooks/use-tenant";
 import { EditableSettingRow } from "@/components/EditableSettingRow";
+import { CreateRoleDialog } from "@/components/CreateRoleDialog";
+import { EditRoleDialog } from "@/components/EditRoleDialog";
 import { cn } from "@/lib/utils";
 
 interface ApiKey {
@@ -56,6 +58,7 @@ type SettingsSection =
   | "workspace-general"
   | "workspace-members"
   | "workspace-permissions"
+  | "workspace-roles"
   | "new-project"
   | "api-keys"
   | "jira"
@@ -79,7 +82,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const param = searchParams.get("section") as SettingsSection | null;
     const valid: SettingsSection[] = [
-      "workspace-general", "workspace-members", "workspace-permissions", "new-project", "api-keys", "jira",
+      "workspace-general", "workspace-members", "workspace-permissions", "workspace-roles", "new-project", "api-keys", "jira",
       "environments", "builds", "labels", "priorities", "components", "members",
     ];
     if (param && valid.includes(param)) setSection(param);
@@ -176,6 +179,10 @@ export default function SettingsPage() {
   const [wsLogoError, setWsLogoError] = useState("");
   const wsLogoInputRef = useRef<HTMLInputElement>(null);
 
+  // Workspace Roles
+  const [roles, setRoles] = useState<any[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+
   useEffect(() => {
     fetch("/api/keys")
       .then((r) => r.json())
@@ -197,6 +204,23 @@ export default function SettingsPage() {
       .catch((err) => {
         console.error("Fetch permissions failed:", err);
         setPermissionsLoading(false);
+      });
+  }, [tenantId, section]);
+
+  useEffect(() => {
+    if (!tenantId || section !== "workspace-roles") {
+      return;
+    }
+    setRolesLoading(true);
+    fetch(`/api/tenants/${tenantId}/roles`)
+      .then((r) => r.json())
+      .then((data) => {
+        setRoles(data.roles || []);
+        setRolesLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch roles failed:", err);
+        setRolesLoading(false);
       });
   }, [tenantId, section]);
 
@@ -517,6 +541,7 @@ export default function SettingsPage() {
           <NavItem id="workspace-general" icon={Building2} label="General" />
           <NavItem id="workspace-members" icon={UserPlus} label="Members" />
           <NavItem id="workspace-permissions" icon={Shield} label="Permissions" />
+          <NavItem id="workspace-roles" icon={Users} label="Roles" />
         </div>
 
         <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -1004,6 +1029,96 @@ export default function SettingsPage() {
                       {permissionSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       {permissionSaving ? "Saving..." : "Save Changes"}
                     </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Workspace Roles ── */}
+            {section === "workspace-roles" && (
+              <div className="max-w-4xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-base font-semibold mb-1">Custom Roles</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Create and manage custom roles for your workspace members
+                    </p>
+                  </div>
+                  {tenantRole === "OWNER" || tenantRole === "ADMIN" ? (
+                    <CreateRoleDialog tenantId={tenantId} onRoleCreated={() => {
+                      setRolesLoading(true);
+                      fetch(`/api/tenants/${tenantId}/roles`)
+                        .then((r) => r.json())
+                        .then((data) => { setRoles(data.roles || []); setRolesLoading(false); })
+                        .catch(() => setRolesLoading(false));
+                    }} />
+                  ) : null}
+                </div>
+
+                {rolesLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : roles.length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-8">
+                    No custom roles yet. Create one to assign permissions to your team members.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {roles.map((role: any) => (
+                      <div key={role.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-foreground">{role.name}</p>
+                          {role.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{role.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/settings?section=workspace-roles&edit=${role.id}`}>
+                              Manage Permissions
+                            </Link>
+                          </Button>
+                          {tenantRole === "OWNER" || tenantRole === "ADMIN" ? (
+                            <>
+                              <EditRoleDialog
+                                roleId={role.id}
+                                tenantId={tenantId}
+                                initialName={role.name}
+                                initialDescription={role.description}
+                                onRoleUpdated={() => {
+                                  setRolesLoading(true);
+                                  fetch(`/api/tenants/${tenantId}/roles`)
+                                    .then((r) => r.json())
+                                    .then((data) => { setRoles(data.roles || []); setRolesLoading(false); })
+                                    .catch(() => setRolesLoading(false));
+                                }}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  if (confirm(`Delete role "${role.name}"? This will remove the role from all members.`)) {
+                                    try {
+                                      const res = await fetch(`/api/tenants/${tenantId}/roles/${role.id}`, {
+                                        method: "DELETE",
+                                      });
+                                      if (res.ok) {
+                                        setRoles(roles.filter((r: any) => r.id !== role.id));
+                                      }
+                                    } catch (err) {
+                                      console.error("Failed to delete role:", err);
+                                    }
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { TestIds } from "@/lib/test-ids";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useResizablePanel } from "@/hooks/use-resize";
 import { PanelResizeHandle } from "@/components/ui/resize-handle";
 import { Button } from "@/components/ui/button";

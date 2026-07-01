@@ -87,8 +87,11 @@ export async function GET(req: NextRequest) {
     where.executionId = entityId;
   } else if (entityType === "STEP_EXECUTION") {
     where.stepExecutionId = entityId;
+  } else if (entityType === "TEST_CASE") {
+    // For test case attachments, return empty array (test cases don't have direct attachments)
+    return ok([]);
   } else {
-    return err("Invalid entityType. Must be EXECUTION or STEP_EXECUTION");
+    return err("Invalid entityType. Must be EXECUTION, STEP_EXECUTION, or TEST_CASE", 400);
   }
 
   const attachments = await prisma.attachment.findMany({

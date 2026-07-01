@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { z } from "zod";
 
 const querySchema = z.object({
@@ -24,15 +24,8 @@ export async function GET(
   });
   if (!parsed.success) return err(parsed.error.message);
 
-  const membership = await prisma.projectMember.findUnique({
-    where: {
-      projectId_userId: {
-        projectId: parsed.data.projectId,
-        userId: caller.userId,
-      },
-    },
-  });
-  if (!membership) return err("Forbidden", 403);
+  const access = await verifyProjectAccess(caller.userId, parsed.data.projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const [executions, total] = await Promise.all([
     prisma.testCaseExecution.findMany({

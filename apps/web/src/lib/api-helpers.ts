@@ -68,9 +68,23 @@ export async function verifyProjectAccess(
       ? prisma.project.findUnique({ where: { id: projectId }, select: { tenantId: true } })
       : Promise.resolve(null),
   ]);
-  if (!member) return false;
-  if (tenantId && (!project || project.tenantId !== tenantId)) return false;
-  return true;
+
+  // Direct project member
+  if (member) {
+    if (tenantId && (!project || project.tenantId !== tenantId)) return false;
+    return true;
+  }
+
+  // Not a direct project member - check workspace membership as fallback
+  if (tenantId && project) {
+    const workspaceMember = await prisma.tenantMember.findFirst({
+      where: { userId, tenantId: project.tenantId },
+      select: { id: true },
+    });
+    return !!workspaceMember;
+  }
+
+  return false;
 }
 
 export async function getProjectKey(projectId: string) {

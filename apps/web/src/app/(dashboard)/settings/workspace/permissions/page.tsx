@@ -31,11 +31,25 @@ export default function WorkspacePermissionsPage() {
 
   const roles = ["OWNER", "ADMIN", "MEMBER"];
 
+  // Debug: Log session status
   useEffect(() => {
-    if (status === "loading") return;
+    console.log("Session status:", status);
+    console.log("Session data:", session);
+    console.log("TenantId:", session?.user?.tenantId);
+  }, [session, status]);
+
+  useEffect(() => {
+    console.log("useEffect triggered - status:", status, "tenantId:", session?.user?.tenantId);
+    
+    if (status === "loading") {
+      console.log("Session still loading, returning early");
+      return;
+    }
     
     if (!session?.user?.tenantId) {
-      setError("No workspace ID found. Please log in again.");
+      const errorMsg = "No workspace ID found. Please log in again.";
+      console.error(errorMsg, { session, tenantId: session?.user?.tenantId });
+      setError(errorMsg);
       setIsLoading(false);
       return;
     }
@@ -43,10 +57,10 @@ export default function WorkspacePermissionsPage() {
     const fetchPermissions = async () => {
       try {
         const url = `/api/tenants/${session.user.tenantId}/settings/permissions`;
-        console.log("Fetching permissions from:", url);
+        console.log("🟢 Fetching permissions from:", url);
         
         const response = await fetch(url);
-        console.log("Response status:", response.status);
+        console.log("🟢 Response status:", response.status);
         
         if (!response.ok) {
           const errText = await response.text();
@@ -54,11 +68,11 @@ export default function WorkspacePermissionsPage() {
         }
         
         const data = await response.json();
-        console.log("Permissions data:", data);
+        console.log("🟢 Permissions data:", data);
         setFeatures(data.featureFlags || []);
         setError(null);
       } catch (error) {
-        console.error("Error fetching permissions:", error);
+        console.error("❌ Error fetching permissions:", error);
         setError(error instanceof Error ? error.message : "Failed to load permissions");
       } finally {
         setIsLoading(false);
@@ -126,10 +140,23 @@ export default function WorkspacePermissionsPage() {
     }
   };
 
-  if (status === "loading" || isLoading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Workspace Permissions</h1>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Loading permissions...</p>
+              <p className="text-xs text-gray-500 mt-4">
+                Status: {status} | TenantId: {session?.user?.tenantId || "Not loaded"}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

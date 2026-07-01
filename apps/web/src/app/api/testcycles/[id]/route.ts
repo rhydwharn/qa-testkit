@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -53,6 +54,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!cycle) return err("Not found", 404);
   const access = await verifyProjectAccess(caller.userId, cycle.projectId, caller.tenantId);
   if (!access) return err("Not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    cycle.projectId,
+    "TEST_CYCLE_READ"
+  );
+  if (permissionError) return permissionError;
+
   return ok(cycle);
 }
 
@@ -65,6 +74,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!cycle) return err("Not found", 404);
   const access = await verifyProjectAccess(caller.userId, cycle.projectId, caller.tenantId);
   if (!access) return err("Not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    cycle.projectId,
+    "TEST_CYCLE_UPDATE"
+  );
+  if (permissionError) return permissionError;
 
   const body = await req.json().catch(() => null);
   if (!body) return err("Invalid JSON");
@@ -94,6 +110,13 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!cycle) return err("Not found", 404);
   const access = await verifyProjectAccess(caller.userId, cycle.projectId, caller.tenantId);
   if (!access) return err("Not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    cycle.projectId,
+    "TEST_CYCLE_DELETE"
+  );
+  if (permissionError) return permissionError;
 
   await prisma.testCycle.delete({ where: { id } });
   return ok({ deleted: true });

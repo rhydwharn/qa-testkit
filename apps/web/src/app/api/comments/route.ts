@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -37,6 +38,37 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
+
+  // Get the project ID based on entity type
+  let projectId: string | null = null;
+  if (parsed.data.entityType === "TEST_CASE") {
+    const tc = await prisma.testCase.findUnique({
+      where: { id: parsed.data.entityId },
+      select: { projectId: true },
+    });
+    projectId = tc?.projectId ?? null;
+  } else if (parsed.data.entityType === "TEST_CYCLE") {
+    const cycle = await prisma.testCycle.findUnique({
+      where: { id: parsed.data.entityId },
+      select: { projectId: true },
+    });
+    projectId = cycle?.projectId ?? null;
+  } else if (parsed.data.entityType === "TEST_PLAN") {
+    const plan = await prisma.testPlan.findUnique({
+      where: { id: parsed.data.entityId },
+      select: { projectId: true },
+    });
+    projectId = plan?.projectId ?? null;
+  }
+
+  if (!projectId) return err("Entity not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    projectId,
+    "PROJECT_COMMENTS_CREATE"
+  );
+  if (permissionError) return permissionError;
 
   const comment = await prisma.comment.create({
     data: {

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -20,6 +21,13 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get("projectId");
   if (!projectId) return err("projectId is required");
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    projectId,
+    "TEST_PLAN_READ"
+  );
+  if (permissionError) return permissionError;
 
   const plans = await prisma.testPlan.findMany({
     where: { projectId },
@@ -53,6 +61,13 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    d.projectId,
+    "TEST_PLAN_CREATE"
+  );
+  if (permissionError) return permissionError;
 
   const count = await prisma.testPlan.count({ where: { projectId: d.projectId } });
   const key = `PLN-${count + 1}`;

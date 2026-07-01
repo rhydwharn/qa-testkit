@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -24,6 +25,13 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get("projectId");
   if (!projectId) return err("projectId is required");
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    projectId,
+    "TEST_CYCLE_READ"
+  );
+  if (permissionError) return permissionError;
 
   const cycles = await prisma.testCycle.findMany({
     where: { projectId },
@@ -65,6 +73,13 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    d.projectId,
+    "TEST_CYCLE_CREATE"
+  );
+  if (permissionError) return permissionError;
 
   const [project, count] = await Promise.all([
     prisma.project.findUnique({ where: { id: d.projectId }, select: { key: true } }),

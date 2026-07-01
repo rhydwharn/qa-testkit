@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -32,8 +33,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   if (!testCase) return err("Not found", 404);
-  const ok2 = await verifyProjectAccess(caller.userId, testCase.projectId, caller.tenantId);
-  if (!ok2) return err("Not found", 404);
+  const access = await verifyProjectAccess(caller.userId, testCase.projectId, caller.tenantId);
+  if (!access) return err("Not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    testCase.projectId,
+    "TEST_CASE_READ"
+  );
+  if (permissionError) return permissionError;
+
   return ok(testCase);
 }
 
@@ -46,6 +55,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!tc) return err("Not found", 404);
   const access = await verifyProjectAccess(caller.userId, tc.projectId, caller.tenantId);
   if (!access) return err("Not found", 404);
+
+  const permissionError = await enforcePermission(
+    caller.userId,
+    tc.projectId,
+    "TEST_CASE_UPDATE"
+  );
+  if (permissionError) return permissionError;
 
   const body = await req.json().catch(() => null);
   if (!body) return err("Invalid JSON");
@@ -72,8 +88,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const access = await verifyProjectAccess(caller.userId, tc.projectId, caller.tenantId);
   if (!access) return err("Not found", 404);
 
-  const user = await prisma.user.findUnique({ where: { id: caller.userId }, select: { role: true } });
-  if (!user || user.role !== "ADMIN") return err("Only admins can delete test cases", 403);
+  const permissionError = await enforcePermission(
+    caller.userId,
+    tc.projectId,
+    "TEST_CASE_DELETE"
+  );
+  if (permissionError) return permissionError;
 
   await prisma.testCase.delete({ where: { id } });
   return ok({ deleted: true });

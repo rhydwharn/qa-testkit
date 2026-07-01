@@ -17,12 +17,28 @@ export async function GET(req: NextRequest) {
   const caller = await requireAuth(req);
   if (!caller) return err("Unauthorized", 401);
 
+  // If user has a tenantId, show all projects in the workspace
+  if (caller.tenantId) {
+    const projects = await prisma.project.findMany({
+      where: { tenantId: caller.tenantId },
+      include: {
+        _count: { select: { testCases: true, testCycles: true, members: true } },
+        members: {
+          where: { userId: caller.userId },
+          select: { role: true },
+        },
+      },
+    });
+
+    return ok(projects.map((p) => ({
+      ...p,
+      role: p.members[0]?.role || null,
+    })));
+  }
+
+  // Fallback: show only projects user is a member of
   const memberships = await prisma.projectMember.findMany({
-    where: {
-      userId: caller.userId,
-      // Scope to current tenant if available
-      ...(caller.tenantId ? { project: { tenantId: caller.tenantId } } : {}),
-    },
+    where: { userId: caller.userId },
     include: {
       project: {
         include: {

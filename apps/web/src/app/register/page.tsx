@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ type TenantMode = "create" | "join" | null;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [tenantMode, setTenantMode] = useState<TenantMode>(null);
   const [tenantName, setTenantName] = useState("");
   const [joinWorkspaceName, setJoinWorkspaceName] = useState("");
@@ -78,6 +79,9 @@ export default function RegisterPage() {
       setError("Account created but could not sign in automatically. Please log in.");
       router.push("/login");
     } else {
+      // Refresh session to load tenantId from database
+      await updateSession();
+
       // If creating new tenant, go to onboarding; if joining, go to projects
       const redirectPath = tenantMode === "create" ? "/onboarding" : "/projects";
       router.push(redirectPath);

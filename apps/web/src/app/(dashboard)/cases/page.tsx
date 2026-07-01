@@ -1290,12 +1290,29 @@ function RowActions({
 
 function TcDetailPanel({ tcId, projectId }: { tcId: string; projectId: string }) {
   const [tc, setTc] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setTc(null);
-    fetch(`/api/testcases/${tcId}`).then(r => r.json()).then(setTc);
+    setError(null);
+    fetch(`/api/testcases/${tcId}`)
+      .then(r => {
+        if (!r.ok) {
+          setError(`Failed to load test case (${r.status})`);
+          return null;
+        }
+        return r.json();
+      })
+      .then(data => {
+        if (data) setTc(data);
+      })
+      .catch(err => {
+        console.error("Error loading test case:", err);
+        setError("Failed to load test case");
+      });
   }, [tcId]);
 
+  if (error) return <div className="p-6 text-sm text-destructive">{error}</div>;
   if (!tc) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
 
   const latestVersion = tc.versions?.find((v: any) => v.isLatest) ?? tc.versions?.[0];

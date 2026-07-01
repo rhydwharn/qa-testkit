@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
 const stepResultSchema = z.object({
@@ -69,6 +70,14 @@ export async function POST(req: NextRequest) {
   const parsed = submitSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
+
+  // Enforce permission to submit automation results
+  const permissionError = await enforcePermission(
+    caller.userId,
+    d.projectId,
+    "PROJECT_AUTOMATION_SUBMIT"
+  );
+  if (permissionError) return permissionError;
 
   // DEBUG: Log the full payload for debugging
   console.log("[automation/submit] ===== FULL PAYLOAD RECEIVED =====");

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { z } from "zod";
 
 const resultSchema = z.object({
@@ -38,6 +38,11 @@ export async function POST(req: NextRequest) {
   const parsed = cyclesSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
+
+  // Verify project access
+  const access = await verifyProjectAccess(caller.userId, d.projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
+
   const framework = d.framework.toLowerCase().replace(/-/g, "_");
 
   // Always create a new TestCycle

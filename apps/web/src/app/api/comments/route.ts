@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { enforcePermission } from "@/lib/permission-middleware";
 import { z } from "zod";
 
@@ -17,8 +17,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const entityType = searchParams.get("entityType");
   const entityId = searchParams.get("entityId");
+  const projectId = searchParams.get("projectId");
 
   if (!entityType || !entityId) return err("entityType and entityId required");
+  if (!projectId) return err("projectId is required");
+
+  // Verify user has access to the project
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const comments = await prisma.comment.findMany({
     where: { entityType, entityId },

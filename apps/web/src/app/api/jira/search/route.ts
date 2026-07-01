@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { searchJiraIssues } from "@/lib/jira";
 
 export async function GET(req: NextRequest) {
@@ -12,6 +12,10 @@ export async function GET(req: NextRequest) {
   const type = (searchParams.get("type") ?? "all") as "bug" | "all";
 
   if (!projectId) return err("projectId is required");
+
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
+
   if (!q) return ok([]);
 
   const issues = await searchJiraIssues(projectId, q, type);

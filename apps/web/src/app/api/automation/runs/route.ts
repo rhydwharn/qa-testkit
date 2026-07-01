@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 
 export async function GET(req: NextRequest) {
   const caller = await requireAuth(req);
@@ -9,6 +9,9 @@ export async function GET(req: NextRequest) {
 
   const projectId = req.nextUrl.searchParams.get("projectId");
   if (!projectId) return err("projectId is required");
+
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   try {
     const runs = await prisma.automationRun.findMany({

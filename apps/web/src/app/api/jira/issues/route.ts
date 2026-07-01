@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { createJiraBug } from "@/lib/jira";
 import { z } from "zod";
 
@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
   const parsed = createBugSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
   const d = parsed.data;
+
+  const access = await verifyProjectAccess(caller.userId, d.projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const result = await createJiraBug(d.projectId, {
     jiraProjectKey: d.jiraProjectKey,

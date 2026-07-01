@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get("type");
   if (!projectId) return err("projectId is required");
 
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
+
   const folders = await prisma.folder.findMany({
     where: {
       projectId,
@@ -82,6 +85,9 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
+
+  const access = await verifyProjectAccess(caller.userId, parsed.data.projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const folder = await prisma.folder.create({ data: parsed.data });
   return ok(folder, 201);

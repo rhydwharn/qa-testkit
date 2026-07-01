@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -20,6 +20,27 @@ export async function POST(req: NextRequest) {
 
   if (!file) return err("No file provided");
   if (!executionId && !stepExecutionId) return err("executionId or stepExecutionId required");
+
+  // Verify user has access to the project containing this execution
+  let projectId: string | null = null;
+  if (executionId) {
+    const execution = await prisma.testCaseExecution.findUnique({
+      where: { id: executionId },
+      select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } }
+    });
+    projectId = execution?.testCaseVersion?.testCase?.projectId ?? null;
+  } else if (stepExecutionId) {
+    const stepExecution = await prisma.stepExecution.findUnique({
+      where: { id: stepExecutionId },
+      select: { execution: { select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } } } }
+    });
+    projectId = stepExecution?.execution?.testCaseVersion?.testCase?.projectId ?? null;
+  }
+
+  if (!projectId) return err("Execution not found", 404);
+
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   // Limit file size to 20MB
   if (file.size > 20 * 1024 * 1024) return err("File size limit is 20MB");
@@ -63,6 +84,12 @@ export async function GET(req: NextRequest) {
   const entityType = searchParams.get("entityType");
   const entityId = searchParams.get("entityId");
   const executionId = searchParams.get("executionId");
+  const projectId = searchParams.get("projectId");
+
+  // Verify project access
+  if (!projectId) return err("projectId is required");
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   // Support both old style (executionId) and new style (entityType + entityId)
   if (executionId && !entityType && !entityId) {

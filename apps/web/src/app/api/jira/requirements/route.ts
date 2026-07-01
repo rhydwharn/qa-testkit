@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireAuth, ok, err } from "@/lib/api-helpers";
+import { requireAuth, verifyProjectAccess, ok, err } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 function makeHeaders(email: string, token: string) {
@@ -20,6 +20,10 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? "";
 
   if (!projectId) return err("projectId is required");
+
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
+
   if (!q) return ok([]);
 
   const project = await prisma.project.findUnique({

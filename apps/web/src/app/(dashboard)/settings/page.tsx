@@ -54,6 +54,7 @@ interface ApiKey {
 type SettingsSection =
   | "workspace-general"
   | "workspace-members"
+  | "workspace-permissions"
   | "new-project"
   | "api-keys"
   | "jira"
@@ -77,7 +78,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const param = searchParams.get("section") as SettingsSection | null;
     const valid: SettingsSection[] = [
-      "workspace-general", "workspace-members", "new-project", "api-keys", "jira",
+      "workspace-general", "workspace-members", "workspace-permissions", "new-project", "api-keys", "jira",
       "environments", "builds", "labels", "priorities", "components", "members",
     ];
     if (param && valid.includes(param)) setSection(param);
@@ -475,6 +476,7 @@ export default function SettingsPage() {
         <div className="px-2 space-y-0.5">
           <NavItem id="workspace-general" icon={Building2} label="General" />
           <NavItem id="workspace-members" icon={UserPlus} label="Members" />
+          <NavItem id="workspace-permissions" icon={Shield} label="Permissions" />
         </div>
 
         <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -727,6 +729,21 @@ export default function SettingsPage() {
                                 {m.role}
                               </span>
                             </td>
+
+            {section === "workspace-permissions" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Workspace Permissions</h2>
+                <p className="text-gray-600 mb-4">
+                  Configure default feature permissions for your workspace.
+                </p>
+                <a
+                  href="/settings/workspace/permissions"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Go to Permissions Settings →
+                </a>
+              </div>
+            )}
                             <td className="px-4 py-2.5 text-right">
                               {m.role !== "OWNER" && ["OWNER", "ADMIN"].includes(tenantRole ?? "") && (
                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeMember(m.user.id)}>

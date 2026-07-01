@@ -38,7 +38,7 @@ export async function canUserDoAction(
   featureName: FeatureName
 ): Promise<boolean> {
   try {
-    // Get user's project role
+    // Get user's project role and custom role
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         projectId_userId: {
@@ -60,78 +60,150 @@ export async function canUserDoAction(
         featureName,
       },
       include: {
-        rolePermissions: {
-          where: {
-            roleType: "PROJECT_ROLE",
-            roleName: projectMember.role,
-          },
-        },
+        rolePermissions: true,
       },
     });
 
-    // If no project-specific flag, check workspace default
-    if (!featureFlag) {
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { tenantId: true },
-      });
-
-      if (!project) {
-        await logPermissionCheck(userId, projectId, null, featureName, "DENIED", "Project not found");
-        return false;
+    // If project-specific flag exists, check permissions
+    if (featureFlag) {
+      // Check custom role permissions first (if assigned)
+      if (projectMember.customRoleId) {
+        const customRolePermission = featureFlag.rolePermissions.find(
+          (rp) => rp.customRoleId === projectMember.customRoleId
+        );
+        if (customRolePermission) {
+          const isAllowed = featureFlag.isEnabled && customRolePermission.isEnabled;
+          await logPermissionCheck(
+            userId,
+            projectId,
+            null,
+            featureName,
+            isAllowed ? "ALLOWED" : "DENIED",
+            isAllowed ? "Custom role allows access" : "Feature disabled for custom role"
+          );
+          return isAllowed;
+        }
       }
 
-      const workspaceFlag = await prisma.featureFlag.findFirst({
-        where: {
-          tenantId: project.tenantId,
-          featureName,
-        },
-        include: {
-          rolePermissions: {
-            where: {
-              roleType: "TENANT_ROLE",
-              // Map project role to tenant role
-              roleName: projectMember.role === "OWNER" ? "OWNER" : "ADMIN",
-            },
-          },
-        },
-      });
-
-      // If no workspace flag exists either, allow by default (backward compatibility)
-      // Only restrict if permissions have been explicitly configured
-      if (!workspaceFlag) {
+      // Fall back to fixed role permissions
+      const fixedRolePermission = featureFlag.rolePermissions.find(
+        (rp) => rp.roleType === "PROJECT_ROLE" && rp.roleName === projectMember.role
+      );
+      if (fixedRolePermission) {
+        const isAllowed = featureFlag.isEnabled && fixedRolePermission.isEnabled;
         await logPermissionCheck(
           userId,
           projectId,
-          project.tenantId,
+          null,
           featureName,
-          "ALLOWED",
-          "No permissions configured - allowing by default (backward compatible)"
+          isAllowed ? "ALLOWED" : "DENIED",
+          isAllowed ? "Project role allows access" : "Feature disabled for this role"
         );
-        return true;
+        return isAllowed;
       }
 
-      const isAllowed = (workspaceFlag?.isEnabled ?? true) && (workspaceFlag?.rolePermissions[0]?.isEnabled ?? true);
+      // If no specific permission found, allow by default
+      const isAllowed = featureFlag.isEnabled;
+      await logPermissionCheck(
+        userId,
+        projectId,
+        null,
+        featureName,
+        isAllowed ? "ALLOWED" : "DENIED",
+        isAllowed ? "Feature enabled, no role restriction" : "Feature disabled"
+      );
+      return isAllowed;
+    }
+
+    // If no project-specific flag, check workspace default
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { tenantId: true },
+    });
+
+    if (!project) {
+      await logPermissionCheck(userId, projectId, null, featureName, "DENIED", "Project not found");
+      return false;
+    }
+
+    const workspaceFlag = await prisma.featureFlag.findFirst({
+      where: {
+        tenantId: project.tenantId,
+        featureName,
+      },
+      include: {
+        rolePermissions: true,
+      },
+    });
+
+    // If no workspace flag exists either, allow by default (backward compatibility)
+    if (!workspaceFlag) {
       await logPermissionCheck(
         userId,
         projectId,
         project.tenantId,
         featureName,
-        isAllowed ? "ALLOWED" : "DENIED",
-        isAllowed ? "Workspace default allows access" : "Workspace or role does not allow access"
+        "ALLOWED",
+        "No permissions configured - allowing by default (backward compatible)"
       );
-      return isAllowed;
+      return true;
     }
 
-    // Check if feature is enabled for this role
-    const isAllowed = featureFlag.isEnabled && (featureFlag.rolePermissions[0]?.isEnabled ?? true);
+    // Check workspace permissions
+    // Note: For workspace defaults, we need to check tenant member's custom or fixed role
+    const tenantMember = await prisma.tenantMember.findUnique({
+      where: {
+        tenantId_userId: {
+          tenantId: project.tenantId,
+          userId,
+        },
+      },
+    });
+
+    if (!tenantMember) {
+      await logPermissionCheck(
+        userId,
+        projectId,
+        project.tenantId,
+        featureName,
+        "DENIED",
+        "Not a workspace member"
+      );
+      return false;
+    }
+
+    // Check custom role permissions first
+    if (tenantMember.customRoleId) {
+      const customRolePermission = workspaceFlag.rolePermissions.find(
+        (rp) => rp.customRoleId === tenantMember.customRoleId
+      );
+      if (customRolePermission) {
+        const isAllowed = workspaceFlag.isEnabled && customRolePermission.isEnabled;
+        await logPermissionCheck(
+          userId,
+          projectId,
+          project.tenantId,
+          featureName,
+          isAllowed ? "ALLOWED" : "DENIED",
+          isAllowed ? "Workspace custom role allows access" : "Feature disabled for custom role"
+        );
+        return isAllowed;
+      }
+    }
+
+    // Fall back to fixed role permissions
+    const rolePermission = workspaceFlag.rolePermissions.find(
+      (rp) => rp.roleType === "TENANT_ROLE" && rp.roleName === tenantMember.role
+    );
+
+    const isAllowed = (workspaceFlag?.isEnabled ?? true) && (rolePermission?.isEnabled ?? true);
     await logPermissionCheck(
       userId,
       projectId,
-      null,
+      project.tenantId,
       featureName,
       isAllowed ? "ALLOWED" : "DENIED",
-      isAllowed ? "Project role allows access" : "Feature disabled for this role"
+      isAllowed ? "Workspace default allows access" : "Workspace or role does not allow access"
     );
     return isAllowed;
   } catch (error) {

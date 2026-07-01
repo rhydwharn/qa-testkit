@@ -10,8 +10,13 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { CheckSquare, Loader2 } from "lucide-react";
 
+type TenantMode = "create" | "join";
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [tenantMode, setTenantMode] = useState<TenantMode>("create");
+  const [tenantName, setTenantName] = useState("");
+  const [tenantId, setTenantId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,12 +37,30 @@ export default function RegisterPage() {
       return;
     }
 
+    if (tenantMode === "create" && !tenantName.trim()) {
+      setError("Please enter a workspace name.");
+      return;
+    }
+
+    if (tenantMode === "join" && !tenantId.trim()) {
+      setError("Please enter a workspace ID.");
+      return;
+    }
+
     setLoading(true);
+
+    const registerPayload = {
+      name,
+      email,
+      password,
+      tenantMode,
+      ...(tenantMode === "create" ? { tenantName } : { tenantId }),
+    };
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify(registerPayload),
     });
 
     if (!res.ok) {
@@ -47,7 +70,7 @@ export default function RegisterPage() {
       return;
     }
 
-    // Auto sign in then go to onboarding
+    // Auto sign in then go to appropriate page
     const signInRes = await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
 
@@ -55,7 +78,9 @@ export default function RegisterPage() {
       setError("Account created but could not sign in automatically. Please log in.");
       router.push("/login");
     } else {
-      router.push("/onboarding");
+      // If creating new tenant, go to onboarding; if joining, go to projects
+      const redirectPath = tenantMode === "create" ? "/onboarding" : "/projects";
+      router.push(redirectPath);
     }
   }
 
@@ -108,6 +133,62 @@ export default function RegisterPage() {
             {error && (
               <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {error}
+              </div>
+            )}
+
+            <div className="space-y-3 pb-4 border-b">
+              <Label className="text-base font-semibold">Workspace</Label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="tenantMode"
+                    value="create"
+                    checked={tenantMode === "create"}
+                    onChange={() => setTenantMode("create")}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Create new workspace</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="tenantMode"
+                    value="join"
+                    checked={tenantMode === "join"}
+                    onChange={() => setTenantMode("join")}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Join existing workspace</span>
+                </label>
+              </div>
+            </div>
+
+            {tenantMode === "create" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="tenantName">Workspace name</Label>
+                <Input
+                  id="tenantName"
+                  type="text"
+                  placeholder="e.g., Acme Corp QA"
+                  value={tenantName}
+                  onChange={(e) => setTenantName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            {tenantMode === "join" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="tenantId">Workspace ID</Label>
+                <Input
+                  id="tenantId"
+                  type="text"
+                  placeholder="Enter workspace ID"
+                  value={tenantId}
+                  onChange={(e) => setTenantId(e.target.value)}
+                  required
+                />
               </div>
             )}
 

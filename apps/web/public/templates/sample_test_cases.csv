@@ -1,0 +1,22 @@
+Summary,Description,Precondition,Status,Priority,Labels,Components,JIRA Requirement,Test Steps,Expected Results,Test Data,Folder Path
+Login with valid credentials,Test user login functionality,User should be on login page,Active,High,"smoke,regression",Auth,JIR-123,"1. Enter username
+2. Enter password
+3. Click Login button","User should be logged in successfully and redirected to dashboard",username: testuser@example.com; password: Test123!,Auth/Login
+Login with invalid credentials,Test error handling for invalid login,User should be on login page,Active,High,"smoke,regression",Auth,JIR-123,"1. Enter invalid username
+2. Enter invalid password
+3. Click Login button","Error message should display: 'Invalid credentials'",username: invalid@test.com; password: wrongpass,Auth/Login
+Verify password reset link,Test password reset functionality,User should be on login page and have account,Active,Medium,"regression,security",Auth,JIR-124,"1. Click 'Forgot Password'
+2. Enter email address
+3. Check email for reset link","Email should contain password reset link that expires in 24 hours",email: testuser@example.com,Auth/Password Reset
+Create test case with all fields,Test creating comprehensive test case,User should be logged in and on test cases page,Active,Medium,"feature,automation",QA,JIR-125,"1. Click 'New Test Case'
+2. Fill all required fields
+3. Add test steps
+4. Click Save","Test case should be created with all fields saved correctly",title: 'Complete Test Case',status: Active,Smoke/TestCase Creation
+Verify search functionality,Test search feature for test cases,User should have multiple test cases created,Active,Medium,"regression,smoke",Search,JIR-126,"1. Enter search term in search box
+2. Press Enter
+3. Review results","Search results should display only matching test cases",search_term: 'login',Results/Search
+Execute test case,Test case execution workflow,Test case should exist and not be executed,Active,High,"smoke,critical",Execution,JIR-127,"1. Open test case
+2. Click 'Execute'
+3. Set result to PASS
+4. Add comments
+5. Submit","Test execution should be recorded with timestamp and result",result: PASS; comments: All steps passed,Execution/TestCaseExecution

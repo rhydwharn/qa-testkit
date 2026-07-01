@@ -37,6 +37,7 @@ model Tenant {
   projects             Project[]
   apiKeys              ApiKey[]
   invites              TenantInvite[]
+  customRoles          CustomRole[]
   featureFlags         FeatureFlag[]
   permissionAuditLogs  PermissionAuditLog[]
 
@@ -44,14 +45,16 @@ model Tenant {
 }
 
 model TenantMember {
-  id       String     @id @default(cuid())
-  tenantId String
-  userId   String
-  role     TenantRole @default(MEMBER)
-  joinedAt DateTime   @default(now())
+  id            String   @id @default(cuid())
+  tenantId      String
+  userId        String
+  role          TenantRole @default(MEMBER)
+  customRoleId  String?
+  joinedAt      DateTime @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customRole CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, userId])
   @@index([userId])
@@ -70,6 +73,28 @@ model TenantInvite {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+}
+
+model CustomRole {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  tenantId      String?
+  projectId     String?
+  isSystemRole  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant              Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project             Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenantMembers       TenantMember[]
+  projectMembers      ProjectMember[]
+  rolePermissions     RolePermission[]
+
+  @@unique([tenantId, name])
+  @@unique([projectId, name])
+  @@index([tenantId])
+  @@index([projectId])
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -196,6 +221,7 @@ model Project {
   statuses       Status[]
   priorities     Priority[]
   customFields   CustomField[]
+  customRoles    CustomRole[]
   apiKeys        ApiKey[]
   automationRuns      AutomationRun[]
   savedFilters        SavedFilter[]
@@ -207,14 +233,16 @@ model Project {
 }
 
 model ProjectMember {
-  id        String      @id @default(cuid())
-  projectId String
-  userId    String
-  role      ProjectRole @default(TESTER)
-  joinedAt  DateTime    @default(now())
+  id            String   @id @default(cuid())
+  projectId     String
+  userId        String
+  role          ProjectRole @default(TESTER)
+  customRoleId  String?
+  joinedAt      DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customRole CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   @@unique([projectId, userId])
 }
@@ -752,15 +780,19 @@ model RolePermission {
   id             String   @id @default(cuid())
   featureFlagId  String
   roleType       RoleType
-  roleName       String   // e.g., "OWNER", "ADMIN", "MEMBER" for tenant; "OWNER", "LEAD", "TESTER", "VIEWER" for project
+  roleName       String?  // e.g., "OWNER", "ADMIN", "MEMBER" for tenant; "OWNER", "LEAD", "TESTER", "VIEWER" for project
+  customRoleId   String?
   isEnabled      Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   featureFlag FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+  customRole  CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: Cascade)
 
   @@unique([featureFlagId, roleType, roleName])
+  @@unique([featureFlagId, customRoleId])
   @@index([featureFlagId])
+  @@index([customRoleId])
 }
 
 model PermissionAuditLog {

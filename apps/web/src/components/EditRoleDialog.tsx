@@ -16,7 +16,7 @@ import {
 
 interface EditRoleDialogProps {
   roleId: string;
-  tenantId: string;
+  tenantId: string | null;
   initialName: string;
   initialDescription?: string;
   onRoleUpdated: () => void;
@@ -37,6 +37,11 @@ export function EditRoleDialog({
 
   async function handleUpdate() {
     setError("");
+
+    if (!tenantId) {
+      setError("Workspace not loaded");
+      return;
+    }
 
     if (!name.trim()) {
       setError("Role name is required");

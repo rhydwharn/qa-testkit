@@ -465,7 +465,7 @@ function FolderTreeNode({
 function ImportGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-brand-500" />
@@ -797,11 +797,30 @@ function ImportWizardModal({
                 {step === 1 ? "Step 1. Upload File" : "Step 2. Map Fields"}
               </span>
             </DialogTitle>
+            {step === 1 && (
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t text-sm">
+                <a
+                  href="/templates/sample_test_cases.csv"
+                  download="sample_test_cases.csv"
+                  className="text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Download CSV Template
+                </a>
+                <button
+                  onClick={() => setShowGuide(true)}
+                  className="text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  Import Guide
+                </button>
+              </div>
+            )}
           </DialogHeader>
 
           {/* ---- STEP 1 ---- */}
           {step === 1 && (
-            <div className="space-y-5">
+            <div className="space-y-5 w-full overflow-x-hidden">
               <div
                 className="relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-colors"
                 onClick={() => fileInputRef.current?.click()}

@@ -4,13 +4,19 @@ import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { Lock, Users, Cog } from "lucide-react";
+import { Lock, Users, Cog, Shield } from "lucide-react";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
   const projectId = params.id as string;
 
   const settings = [
+    {
+      title: "Roles",
+      description: "Create custom roles specific to this project and assign permissions.",
+      icon: Shield,
+      href: `/projects/${projectId}/settings/roles`,
+    },
     {
       title: "Permissions",
       description: "Manage feature access by role. Set project-specific permissions or use workspace defaults.",

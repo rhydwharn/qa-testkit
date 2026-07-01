@@ -97,7 +97,21 @@ export async function canUserDoAction(
         },
       });
 
-      const isAllowed = (workspaceFlag?.isEnabled ?? false) && (workspaceFlag?.rolePermissions[0]?.isEnabled ?? true);
+      // If no workspace flag exists either, allow by default (backward compatibility)
+      // Only restrict if permissions have been explicitly configured
+      if (!workspaceFlag) {
+        await logPermissionCheck(
+          userId,
+          projectId,
+          project.tenantId,
+          featureName,
+          "ALLOWED",
+          "No permissions configured - allowing by default (backward compatible)"
+        );
+        return true;
+      }
+
+      const isAllowed = (workspaceFlag?.isEnabled ?? true) && (workspaceFlag?.rolePermissions[0]?.isEnabled ?? true);
       await logPermissionCheck(
         userId,
         projectId,

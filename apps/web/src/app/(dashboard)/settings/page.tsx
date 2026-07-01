@@ -54,7 +54,6 @@ interface ApiKey {
 type SettingsSection =
   | "workspace-general"
   | "workspace-members"
-  | "workspace-permissions"
   | "new-project"
   | "api-keys"
   | "jira"
@@ -78,7 +77,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const param = searchParams.get("section") as SettingsSection | null;
     const valid: SettingsSection[] = [
-      "workspace-general", "workspace-members", "workspace-permissions", "new-project", "api-keys", "jira",
+      "workspace-general", "workspace-members", "new-project", "api-keys", "jira",
       "environments", "builds", "labels", "priorities", "components", "members",
     ];
     if (param && valid.includes(param)) setSection(param);
@@ -484,7 +483,7 @@ export default function SettingsPage() {
         <div className="px-2 space-y-0.5">
           <NavItem id="workspace-general" icon={Building2} label="General" />
           <NavItem id="workspace-members" icon={UserPlus} label="Members" />
-          <a href="/settings/workspace/permissions" className={cn("w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors text-left", section === "workspace-permissions" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/60")}><Shield className="w-4 h-4" /><span>Permissions</span></a>
+          <Link href="/settings/workspace/permissions" className={cn("w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors text-left", "text-muted-foreground hover:text-foreground hover:bg-muted/60")}><Shield className="w-4 h-4" /><span>Permissions</span></Link>
         </div>
 
         <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">

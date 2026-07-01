@@ -220,7 +220,7 @@ export async function canUserDoAction(
     return isAllowed;
   } catch (error) {
     console.error("[canUserDoAction] Error checking permission:", error);
-    await logPermissionCheck(userId, projectId, null, featureName, "DENIED", "Permission check failed");
+    await logPermissionCheck(userId, projectId, null, "error-check-failed", featureName, "DENIED", "Permission check failed");
     return false;
   }
 }

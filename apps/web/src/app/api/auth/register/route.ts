@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) return err(parsed.error.errors[0]?.message ?? "Validation failed");
 
-    const { name, email, password, tenantMode, tenantName, tenantId } = parsed.data;
+    const { name, email, password, tenantMode, tenantName } = parsed.data;
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });

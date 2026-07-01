@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PermissionsMatrix } from "@/components/PermissionsMatrix";
-
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface FeatureRow {
   id: string;
@@ -20,35 +20,53 @@ interface FeatureRow {
 }
 
 export default function WorkspacePermissionsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [features, setFeatures] = useState<FeatureRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [changes, setChanges] = useState<Record<string, Record<string, boolean>>>({});
 
   const roles = ["OWNER", "ADMIN", "MEMBER"];
 
   useEffect(() => {
+    if (status === "loading") return;
+    
+    if (!session?.user?.tenantId) {
+      setError("No workspace ID found. Please log in again.");
+      setIsLoading(false);
+      return;
+    }
+
     const fetchPermissions = async () => {
       try {
-        const response = await fetch(`/api/tenants/${session?.user?.tenantId}/settings/permissions`);
-        if (!response.ok) throw new Error("Failed to fetch permissions");
+        const url = `/api/tenants/${session.user.tenantId}/settings/permissions`;
+        console.log("Fetching permissions from:", url);
+        
+        const response = await fetch(url);
+        console.log("Response status:", response.status);
+        
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Failed to fetch permissions: ${response.status} ${errText}`);
+        }
+        
         const data = await response.json();
+        console.log("Permissions data:", data);
         setFeatures(data.featureFlags || []);
+        setError(null);
       } catch (error) {
         console.error("Error fetching permissions:", error);
-        console.error("Failed to load permissions");
+        setError(error instanceof Error ? error.message : "Failed to load permissions");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (session?.user?.tenantId) {
-      fetchPermissions();
-    }
-  }, [session?.user?.tenantId]);
+    fetchPermissions();
+  }, [session?.user?.tenantId, status]);
 
   const handlePermissionChange = useCallback(
     (featureName: string, roleName: string, isEnabled: boolean) => {
@@ -75,20 +93,24 @@ export default function WorkspacePermissionsPage() {
         }));
       }).flat();
 
-      const response = await fetch(
-        `/api/tenants/${session?.user?.tenantId}/settings/permissions`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ permissions }),
-        }
-      );
+      const url = `/api/tenants/${session?.user?.tenantId}/settings/permissions`;
+      console.log("Saving to:", url);
+      
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions }),
+      });
 
-      if (!response.ok) throw new Error("Failed to save permissions");
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Failed to save: ${response.status} ${errText}`);
+      }
 
-      console.log("Permissions updated successfully");
+      console.log("Permissions saved successfully");
       setChanges({});
       setHasChanges(false);
+      setError(null);
 
       // Refresh permissions
       const refreshResponse = await fetch(
@@ -98,11 +120,19 @@ export default function WorkspacePermissionsPage() {
       setFeatures(data.featureFlags || []);
     } catch (error) {
       console.error("Error saving permissions:", error);
-      console.error("Failed to save permissions");
+      setError(error instanceof Error ? error.message : "Failed to save permissions");
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -113,24 +143,50 @@ export default function WorkspacePermissionsPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-2">Permission Matrix</h2>
-          <p className="text-sm text-gray-600">
-            Manage which features each role can access. These settings apply as defaults to all projects unless overridden at the project level.
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Error</h3>
+            <p className="text-sm text-red-800 mt-1">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm text-red-700 underline mt-2 hover:text-red-900"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )}
+
+      {features.length === 0 && !error && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-800">
+            No permissions configured yet. All features are enabled by default for all roles.
           </p>
         </div>
+      )}
 
-        <PermissionsMatrix
-          features={features}
-          roles={roles}
-          isLoading={isLoading}
-          onPermissionChange={handlePermissionChange}
-          onSave={handleSave}
-          hasChanges={hasChanges}
-          isSaving={isSaving}
-        />
-      </div>
+      {features.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2">Permission Matrix</h2>
+            <p className="text-sm text-gray-600">
+              Manage which features each role can access. These settings apply as defaults to all projects unless overridden at the project level.
+            </p>
+          </div>
+
+          <PermissionsMatrix
+            features={features}
+            roles={roles}
+            isLoading={false}
+            onPermissionChange={handlePermissionChange}
+            onSave={handleSave}
+            hasChanges={hasChanges}
+            isSaving={isSaving}
+          />
+        </div>
+      )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 mb-2">About Workspace Permissions</h3>

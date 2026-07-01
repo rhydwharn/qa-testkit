@@ -33,10 +33,12 @@ model Tenant {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  members  TenantMember[]
-  projects Project[]
-  apiKeys  ApiKey[]
-  invites  TenantInvite[]
+  members              TenantMember[]
+  projects             Project[]
+  apiKeys              ApiKey[]
+  invites              TenantInvite[]
+  featureFlags         FeatureFlag[]
+  permissionAuditLogs  PermissionAuditLog[]
 
   @@index([slug])
 }
@@ -94,6 +96,7 @@ model User {
   comments              Comment[]
   createdFilters        SavedFilter[]       @relation("FilterCreator")
   attachments           Attachment[]
+  permissionAuditLogs   PermissionAuditLog[]
 }
 
 enum UserRole {
@@ -194,8 +197,10 @@ model Project {
   priorities     Priority[]
   customFields   CustomField[]
   apiKeys        ApiKey[]
-  automationRuns AutomationRun[]
-  savedFilters   SavedFilter[]
+  automationRuns      AutomationRun[]
+  savedFilters        SavedFilter[]
+  featureFlags        FeatureFlag[]
+  permissionAuditLogs PermissionAuditLog[]
 
   @@unique([tenantId, key])
   @@index([tenantId])
@@ -715,4 +720,66 @@ model AutomationRun {
   testCycle TestCycle? @relation(fields: [testCycleId], references: [id], onDelete: SetNull)
 
   @@index([projectId, submittedAt])
+}
+
+// ─── Permissions ──────────────────────────────────────────────────────────────
+
+enum RoleType {
+  TENANT_ROLE
+  PROJECT_ROLE
+}
+
+model FeatureFlag {
+  id          String  @id @default(cuid())
+  projectId   String?
+  tenantId    String?
+  featureName String  // e.g., "TEST_CASE_CREATE"
+  description String
+  isEnabled   Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenant           Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rolePermissions  RolePermission[]
+  auditLogs        PermissionAuditLog[]
+
+  @@index([projectId, featureName])
+  @@index([tenantId, featureName])
+}
+
+model RolePermission {
+  id             String   @id @default(cuid())
+  featureFlagId  String
+  roleType       RoleType
+  roleName       String   // e.g., "OWNER", "ADMIN", "MEMBER" for tenant; "OWNER", "LEAD", "TESTER", "VIEWER" for project
+  isEnabled      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  featureFlag FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+
+  @@unique([featureFlagId, roleType, roleName])
+  @@index([featureFlagId])
+}
+
+model PermissionAuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  projectId     String?
+  tenantId      String?
+  featureFlagId String
+  action        String   // "ALLOWED" | "DENIED"
+  reason        String   // why access was granted/denied
+  timestamp     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  tenant      Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  featureFlag FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([projectId, timestamp])
+  @@index([tenantId, timestamp])
+  @@index([featureFlagId])
 }

@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { CheckSquare, Loader2 } from "lucide-react";
+import { CheckSquare, Loader2, Plus, UserPlus } from "lucide-react";
 
-type TenantMode = "create" | "join";
+type TenantMode = "create" | "join" | null;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [tenantMode, setTenantMode] = useState<TenantMode>("create");
+  const [tenantMode, setTenantMode] = useState<TenantMode>(null);
   const [tenantName, setTenantName] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [name, setName] = useState("");
@@ -119,134 +119,170 @@ export default function RegisterPage() {
         </div>
 
         <div className="w-full max-w-sm">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Already have an account?{" "}
-              <Link href="/login" className="text-primary underline underline-offset-4">
-                Sign in
-              </Link>
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
+          {tenantMode === null ? (
+            // Step 1: Choose workspace mode
+            <div className="space-y-8">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Choose your path</h1>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Already have an account?{" "}
+                  <Link href="/login" className="text-primary underline underline-offset-4">
+                    Sign in
+                  </Link>
+                </p>
               </div>
-            )}
 
-            <div className="space-y-3 pb-4 border-b">
-              <Label className="text-base font-semibold">Workspace</Label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="tenantMode"
-                    value="create"
-                    checked={tenantMode === "create"}
-                    onChange={() => setTenantMode("create")}
-                    className="w-4 h-4"
+              <div className="space-y-4">
+                <button
+                  onClick={() => setTenantMode("create")}
+                  className="w-full p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <Plus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Create new workspace</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Start fresh with a new team workspace
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setTenantMode("join")}
+                  className="w-full p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <UserPlus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Join existing workspace</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Join a team that's already set up
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Step 2: Registration form
+            <>
+              <div className="mb-8 flex items-center gap-4">
+                <button
+                  onClick={() => setTenantMode(null)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  type="button"
+                >
+                  ← Back
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {tenantMode === "create"
+                      ? "Set up your new workspace"
+                      : "Join the workspace"}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {error && (
+                  <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+
+                {tenantMode === "create" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tenantName">Workspace name</Label>
+                    <Input
+                      id="tenantName"
+                      type="text"
+                      placeholder="e.g., Acme Corp QA"
+                      value={tenantName}
+                      onChange={(e) => setTenantName(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                {tenantMode === "join" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tenantId">Workspace ID</Label>
+                    <Input
+                      id="tenantId"
+                      type="text"
+                      placeholder="Enter workspace ID"
+                      value={tenantId}
+                      onChange={(e) => setTenantId(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Full name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Jane Smith"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
                   />
-                  <span className="text-sm">Create new workspace</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="tenantMode"
-                    value="join"
-                    checked={tenantMode === "join"}
-                    onChange={() => setTenantMode("join")}
-                    className="w-4 h-4"
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
                   />
-                  <span className="text-sm">Join existing workspace</span>
-                </label>
-              </div>
-            </div>
+                </div>
 
-            {tenantMode === "create" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="tenantName">Workspace name</Label>
-                <Input
-                  id="tenantName"
-                  type="text"
-                  placeholder="e.g., Acme Corp QA"
-                  value={tenantName}
-                  onChange={(e) => setTenantName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <PasswordInput
+                    id="password"
+                    placeholder="Min. 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
 
-            {tenantMode === "join" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="tenantId">Workspace ID</Label>
-                <Input
-                  id="tenantId"
-                  type="text"
-                  placeholder="Enter workspace ID"
-                  value={tenantId}
-                  onChange={(e) => setTenantId(e.target.value)}
-                  required
-                />
-              </div>
-            )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm">Confirm password</Label>
+                  <PasswordInput
+                    id="confirm"
+                    placeholder="••••••••"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Jane Smith"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <PasswordInput
-                id="password"
-                placeholder="Min. 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="confirm">Confirm password</Label>
-              <PasswordInput
-                id="confirm"
-                placeholder="••••••••"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Create account
-            </Button>
-          </form>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Create account
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

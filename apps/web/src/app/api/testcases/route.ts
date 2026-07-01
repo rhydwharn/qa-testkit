@@ -86,6 +86,13 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return err(parsed.error.message);
     const d = parsed.data;
 
+    const permissionError = await enforcePermission(
+      caller.userId,
+      d.projectId,
+      "TEST_CASE_READ"
+    );
+    if (permissionError) return permissionError;
+
     const where: Record<string, unknown> = { projectId: d.projectId };
     if (d.query) where.summary = { contains: d.query, mode: "insensitive" };
     if (d.status?.length) where.status = { in: d.status };

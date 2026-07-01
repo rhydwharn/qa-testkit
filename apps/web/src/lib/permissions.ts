@@ -49,7 +49,12 @@ export async function canUserDoAction(
     });
 
     if (!projectMember) {
-      await logPermissionCheck(userId, projectId, null, featureName, "DENIED", "Not a project member");
+      // Fetch feature flag for audit logging (even though access will be denied)
+      const flagForLog = await prisma.featureFlag.findFirst({
+        where: { projectId, featureName },
+        select: { id: true },
+      });
+      await logPermissionCheck(userId, projectId, null, flagForLog?.id || "flag-not-found", featureName, "DENIED", "Not a project member");
       return false;
     }
 
@@ -77,6 +82,7 @@ export async function canUserDoAction(
             userId,
             projectId,
             null,
+            featureFlag.id,
             featureName,
             isAllowed ? "ALLOWED" : "DENIED",
             isAllowed ? "Custom role allows access" : "Feature disabled for custom role"
@@ -95,6 +101,7 @@ export async function canUserDoAction(
           userId,
           projectId,
           null,
+          featureFlag.id,
           featureName,
           isAllowed ? "ALLOWED" : "DENIED",
           isAllowed ? "Project role allows access" : "Feature disabled for this role"
@@ -108,6 +115,7 @@ export async function canUserDoAction(
         userId,
         projectId,
         null,
+        featureFlag.id,
         featureName,
         isAllowed ? "ALLOWED" : "DENIED",
         isAllowed ? "Feature enabled, no role restriction" : "Feature disabled"
@@ -122,7 +130,7 @@ export async function canUserDoAction(
     });
 
     if (!project) {
-      await logPermissionCheck(userId, projectId, null, featureName, "DENIED", "Project not found");
+      await logPermissionCheck(userId, projectId, null, "flag-project-not-found", featureName, "DENIED", "Project not found");
       return false;
     }
 
@@ -142,6 +150,7 @@ export async function canUserDoAction(
         userId,
         projectId,
         project.tenantId,
+        "flag-workspace-default",
         featureName,
         "ALLOWED",
         "No permissions configured - allowing by default (backward compatible)"
@@ -165,6 +174,7 @@ export async function canUserDoAction(
         userId,
         projectId,
         project.tenantId,
+        workspaceFlag.id,
         featureName,
         "DENIED",
         "Not a workspace member"
@@ -183,6 +193,7 @@ export async function canUserDoAction(
           userId,
           projectId,
           project.tenantId,
+          workspaceFlag.id,
           featureName,
           isAllowed ? "ALLOWED" : "DENIED",
           isAllowed ? "Workspace custom role allows access" : "Feature disabled for custom role"
@@ -201,6 +212,7 @@ export async function canUserDoAction(
       userId,
       projectId,
       project.tenantId,
+      workspaceFlag.id,
       featureName,
       isAllowed ? "ALLOWED" : "DENIED",
       isAllowed ? "Workspace default allows access" : "Workspace or role does not allow access"
@@ -281,6 +293,7 @@ async function logPermissionCheck(
   userId: string,
   projectId: string | null,
   tenantId: string | null,
+  featureFlagId: string,
   featureName: string,
   action: "ALLOWED" | "DENIED",
   reason: string
@@ -293,7 +306,7 @@ async function logPermissionCheck(
           userId,
           projectId,
           tenantId,
-          featureFlagId: "unknown", // Will need feature flag ID, but this is a fallback
+          featureFlagId,
           action,
           reason,
         },

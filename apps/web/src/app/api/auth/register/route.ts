@@ -101,6 +101,6 @@ export async function POST(req: NextRequest) {
     return err("Invalid tenant mode", 400);
   } catch (error) {
     console.error("[register] Error:", error);
-    return err(error instanceof Error ? error.message : "Registration failed", 500);
+    return err("Registration failed. Please try again later.", 500);
   }
 }

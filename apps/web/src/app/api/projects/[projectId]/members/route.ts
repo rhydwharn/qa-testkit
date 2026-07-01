@@ -51,8 +51,33 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   const parsed = inviteSchema.safeParse(body);
   if (!parsed.success) return err(parsed.error.message);
 
+  // Find user by email
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (!user) return err("User not found — they must register first", 404);
+
+  // Get project to find tenant
+  const project = await prisma.project.findUnique({
+    where: { id: params.projectId },
+    select: { tenantId: true },
+  });
+  if (!project) return err("Project not found", 404);
+
+  // Check if user is a member of the workspace
+  const workspaceMember = await prisma.tenantMember.findUnique({
+    where: {
+      tenantId_userId: {
+        tenantId: project.tenantId,
+        userId: user.id,
+      },
+    },
+  });
+
+  if (!workspaceMember) {
+    return err(
+      "User must be a workspace member first. Invite them to the workspace and have them activate their account.",
+      400
+    );
+  }
 
   const member = await prisma.projectMember.upsert({
     where: { projectId_userId: { projectId: params.projectId, userId: user.id } },

@@ -80,7 +80,7 @@ export async function POST(
       },
     });
 
-    // Initialize permissions for all features (enabled by default)
+    // Initialize permissions for all 27 features (enabled by default)
     const features = [
       "TEST_CASE_CREATE", "TEST_CASE_READ", "TEST_CASE_UPDATE", "TEST_CASE_DELETE",
       "TEST_CASE_CLONE", "TEST_CASE_IMPORT", "TEST_CASE_EXPORT", "TEST_CASE_ARCHIVE",

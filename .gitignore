@@ -41,3 +41,21 @@ yarn-error.log*
 
 # Docker
 docker-compose.override.yml
+
+# Documentation files (local reference only, not tracked in git)
+AUDIT_SUMMARY.txt
+COMPLETE_PROJECT_SUMMARY.md
+CRITICAL_FIXES_SUMMARY.md
+DELIVERABLES_COMPLETE.md
+ENGINEERING_AUDIT_EXECUTIVE_SUMMARY.md
+FIXES_APPLIED.md
+ISSUES_TO_FIX.md
+SECURITY_AND_PERFORMANCE_AUDIT.md
+WORKFLOW_TESTING_CHECKLIST.md
+TEST_PLAN_FOR_FIXES.md
+TEST_EXECUTION_REPORT.md
+verify-fixes.js
+deploy.bat
+
+# Test files (local only)
+apps/web/__tests__/

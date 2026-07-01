@@ -152,8 +152,7 @@ export async function canUserDoAction(
         isAllowed ? "ALLOWED" : "DENIED",
         isAllowed ? "Feature enabled, no role restriction" : "Feature disabled"
       );
-        return isAllowed;
-        }
+      return isAllowed;
       }
     }
 

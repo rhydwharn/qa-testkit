@@ -80,6 +80,43 @@ export async function POST(
       },
     });
 
+    // Initialize permissions for all features (enabled by default)
+    const features = [
+      "TEST_CASE_CREATE", "TEST_CASE_READ", "TEST_CASE_UPDATE", "TEST_CASE_DELETE",
+      "TEST_CASE_CLONE", "TEST_CASE_IMPORT", "TEST_CASE_EXPORT", "TEST_CASE_ARCHIVE",
+      "TEST_CYCLE_CREATE", "TEST_CYCLE_READ", "TEST_CYCLE_UPDATE", "TEST_CYCLE_DELETE",
+      "TEST_CYCLE_EXECUTE", "TEST_CYCLE_CLONE", "TEST_CYCLE_ARCHIVE",
+      "TEST_PLAN_CREATE", "TEST_PLAN_READ", "TEST_PLAN_UPDATE", "TEST_PLAN_DELETE",
+      "TEST_PLAN_ARCHIVE", "PROJECT_SETTINGS_MANAGE", "PROJECT_MEMBERS_MANAGE",
+      "PROJECT_AUTOMATION_SUBMIT", "PROJECT_REPORTS_VIEW", "PROJECT_COMMENTS_CREATE",
+      "PROJECT_FILTERS_MANAGE", "JIRA_INTEGRATION",
+    ];
+
+    for (const feature of features) {
+      let featureFlag = await prisma.featureFlag.findFirst({
+        where: { tenantId: params.tenantId, featureName: feature },
+      });
+
+      if (!featureFlag) {
+        featureFlag = await prisma.featureFlag.create({
+          data: {
+            tenantId: params.tenantId,
+            featureName: feature,
+            description: feature.replace(/_/g, " "),
+            isEnabled: true,
+          },
+        });
+      }
+
+      await prisma.rolePermission.create({
+        data: {
+          featureFlagId: featureFlag.id,
+          customRoleId: role.id,
+          isEnabled: true,
+        },
+      });
+    }
+
     return ok(role, 201);
   } catch (error) {
     console.error("Error creating role:", error);

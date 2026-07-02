@@ -241,6 +241,26 @@ function extractSteps(
     .filter((s) => s.stepDetails.trim());
 }
 
+// Parse numbered steps like "1. Step one\n2. Step two\n3. Step three"
+function parseNumberedSteps(input: string): string[] {
+  if (!input?.trim()) return [];
+
+  const stepLines = input.split('\n').filter(line => line.trim());
+  const steps: string[] = [];
+
+  for (const line of stepLines) {
+    const match = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (match) {
+      steps.push(match[1].trim());
+    } else if (steps.length > 0) {
+      // If line doesn't start with number, append to previous step
+      steps[steps.length - 1] += '\n' + line.trim();
+    }
+  }
+
+  return steps;
+}
+
 function groupRowsIntoTestCases(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rows: Record<string, any>[],
@@ -305,11 +325,26 @@ function groupRowsIntoTestCases(
     if (current && stepText) {
       const td = testDataCol ? str(row[testDataCol]) : "";
       const er = expectedCol ? str(row[expectedCol]) : "";
-      current.steps!.push({
-        stepDetails: stepText,
-        testData: td || undefined,
-        expectedResult: er || undefined,
-      });
+
+      // Parse numbered steps if present, otherwise treat as single step
+      const parsedSteps = parseNumberedSteps(stepText);
+      if (parsedSteps.length > 0) {
+        // Multiple numbered steps found - add each separately
+        for (const step of parsedSteps) {
+          current.steps!.push({
+            stepDetails: step,
+            testData: td || undefined,
+            expectedResult: er || undefined,
+          });
+        }
+      } else {
+        // Single step - add as-is
+        current.steps!.push({
+          stepDetails: stepText,
+          testData: td || undefined,
+          expectedResult: er || undefined,
+        });
+      }
     }
   }
 

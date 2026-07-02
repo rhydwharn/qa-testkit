@@ -47,9 +47,21 @@ export async function PUT(
     where: { id: params.execId, testCycleId: params.id },
     data,
     include: {
-      stepExecutions: true,
+      testCaseVersion: {
+        include: {
+          testCase: {
+            select: { id: true, key: true, summary: true, priority: true },
+          },
+          steps: { orderBy: { order: "asc" } },
+        },
+      },
+      testCycle: {
+        select: { id: true, key: true, summary: true },
+      },
+      stepExecutions: { orderBy: { id: "asc" } },
       defects: true,
-      assignee: { select: { id: true, name: true, image: true } },
+      assignee: { select: { id: true, name: true, email: true, image: true } },
+      attachments: { orderBy: { createdAt: "asc" } },
     },
   });
 

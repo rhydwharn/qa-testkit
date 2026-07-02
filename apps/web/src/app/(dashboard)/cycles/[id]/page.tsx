@@ -152,7 +152,14 @@ const STATUS_BG: Record<ExecStatus, string> = {
 
 function formatDate(iso?: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const date = new Date(iso);
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 // ---------------------------------------------------------------------------

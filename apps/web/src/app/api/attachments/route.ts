@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     });
     projectId = execution?.testCaseVersion?.testCase?.projectId ?? null;
   } else if (stepExecutionId) {
-    const stepExecution = await prisma.stepExecution.findUnique({
+    const stepExecution = await prisma.testStepExecution.findUnique({
       where: { id: stepExecutionId },
       select: { execution: { select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } } } }
     });

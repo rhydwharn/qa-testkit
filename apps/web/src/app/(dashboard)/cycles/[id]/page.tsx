@@ -674,17 +674,26 @@ export default function CycleDetailPage() {
 
   async function updateStatus(execId: string, status: ExecStatus) {
     setUpdating(execId);
-    const res = await fetch(`/api/testcycles/${id}/executions/${execId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    const updated: Partial<TestCaseExecution> = await res.json();
-    setCycle((prev) => prev ? {
-      ...prev,
-      executions: prev.executions.map((e) => e.id === execId ? { ...e, ...updated } : e),
-    } : prev);
-    setUpdating(null);
+    try {
+      const res = await fetch(`/api/testcycles/${id}/executions/${execId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const error: { message?: string } = await res.json().catch(() => ({}));
+        throw new Error(error.message ?? `Failed to update execution (${res.status})`);
+      }
+      const updated: Partial<TestCaseExecution> = await res.json();
+      setCycle((prev) => prev ? {
+        ...prev,
+        executions: prev.executions.map((e) => e.id === execId ? { ...e, ...updated } : e),
+      } : prev);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update execution");
+    } finally {
+      setUpdating(null);
+    }
   }
 
   async function startExecution(execId: string) {
@@ -696,45 +705,63 @@ export default function CycleDetailPage() {
 
   async function updateExecutionMethod(execId: string, method: string) {
     setUpdatingMethod(execId);
-    const res = await fetch(`/api/testcycles/${id}/executions/${execId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ executionMethod: method }),
-    });
-    const updated: Partial<TestCaseExecution> = await res.json();
-    setCycle((prev) => prev ? {
-      ...prev,
-      executions: prev.executions.map((e) =>
-        e.id === execId ? { ...e, executionMethod: (updated.executionMethod as string | undefined) ?? method } : e
-      ),
-    } : prev);
-    setUpdatingMethod(null);
+    try {
+      const res = await fetch(`/api/testcycles/${id}/executions/${execId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ executionMethod: method }),
+      });
+      if (!res.ok) {
+        const error: { message?: string } = await res.json().catch(() => ({}));
+        throw new Error(error.message ?? `Failed to update execution method (${res.status})`);
+      }
+      const updated: Partial<TestCaseExecution> = await res.json();
+      setCycle((prev) => prev ? {
+        ...prev,
+        executions: prev.executions.map((e) =>
+          e.id === execId ? { ...e, executionMethod: (updated.executionMethod as string | undefined) ?? method } : e
+        ),
+      } : prev);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update execution method");
+    } finally {
+      setUpdatingMethod(null);
+    }
   }
 
   async function updateStepStatus(execId: string, stepId: string, status: ExecStatus) {
     const key = `${execId}-${stepId}`;
     setUpdatingStep(key);
-    const res = await fetch(`/api/testcycles/${id}/executions/${execId}/steps/${stepId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    const updated: { id: string; status: ExecStatus; testStepId?: string } = await res.json();
-    setCycle((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        executions: prev.executions.map((e) => {
-          if (e.id !== execId) return e;
-          const existing = e.stepExecutions.find((se) => se.testStepId === stepId);
-          const newStepExecs = existing
-            ? e.stepExecutions.map((se) => se.testStepId === stepId ? { ...se, status: updated.status } : se)
-            : [...e.stepExecutions, { id: updated.id, status: updated.status, testStepId: stepId, comment: undefined }];
-          return { ...e, stepExecutions: newStepExecs };
-        }),
-      };
-    });
-    setUpdatingStep(null);
+    try {
+      const res = await fetch(`/api/testcycles/${id}/executions/${execId}/steps/${stepId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const error: { message?: string } = await res.json().catch(() => ({}));
+        throw new Error(error.message ?? `Failed to update step status (${res.status})`);
+      }
+      const updated: { id: string; status: ExecStatus; testStepId?: string } = await res.json();
+      setCycle((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          executions: prev.executions.map((e) => {
+            if (e.id !== execId) return e;
+            const existing = e.stepExecutions.find((se) => se.testStepId === stepId);
+            const newStepExecs = existing
+              ? e.stepExecutions.map((se) => se.testStepId === stepId ? { ...se, status: updated.status } : se)
+              : [...e.stepExecutions, { id: updated.id, status: updated.status, testStepId: stepId, comment: undefined }];
+            return { ...e, stepExecutions: newStepExecs };
+          }),
+        };
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update step status");
+    } finally {
+      setUpdatingStep(null);
+    }
   }
 
   async function createJiraBug(execId: string, summary: string) {

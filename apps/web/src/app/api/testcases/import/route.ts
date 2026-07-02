@@ -13,6 +13,33 @@ interface ImportCase {
   folder?: string;
   key?: string;
   steps?: Array<{ stepDetails: string; expectedResult?: string; testData?: string }>;
+  testSteps?: string; // CSV field with numbered steps
+  expectedResults?: string;
+  testData?: string;
+}
+
+// Parse numbered steps like "1. Step one\n2. Step two\n3. Step three"
+function parseNumberedSteps(input: string): Array<{ stepDetails: string; expectedResult?: string; testData?: string }> {
+  if (!input?.trim()) return [];
+
+  // Match lines that start with a number followed by a period and space
+  const stepLines = input.split('\n').filter(line => line.trim());
+  const steps: Array<{ stepDetails: string; expectedResult?: string; testData?: string }> = [];
+
+  for (const line of stepLines) {
+    const match = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (match) {
+      steps.push({
+        stepDetails: match[1].trim(),
+      });
+    } else if (steps.length > 0) {
+      // If line doesn't start with number, append to previous step
+      const lastStep = steps[steps.length - 1];
+      lastStep.stepDetails += '\n' + line.trim();
+    }
+  }
+
+  return steps;
 }
 
 interface ImportResult {
@@ -139,6 +166,21 @@ export async function POST(req: NextRequest) {
 
   for (const c of cases) {
     if (!c.summary?.trim()) { results.skipped++; continue; }
+
+    // Parse numbered steps from testSteps field if present
+    let steps = c.steps ?? [];
+    if (c.testSteps?.trim() && steps.length === 0) {
+      steps = parseNumberedSteps(c.testSteps);
+      // Apply expectedResults and testData to all steps if provided
+      if (c.expectedResults?.trim() || c.testData?.trim()) {
+        steps = steps.map(step => ({
+          ...step,
+          expectedResult: step.expectedResult || c.expectedResults?.trim() || "",
+          testData: step.testData || c.testData?.trim() || "",
+        }));
+      }
+    }
+    c.steps = steps;
 
     // Duplicate check: use key if provided, otherwise use summary
     let existingTestCase = null;

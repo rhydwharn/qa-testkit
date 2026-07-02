@@ -806,12 +806,12 @@ export default function CycleDetailPage() {
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
     displayed = displayed.filter((e) =>
-      e.testCaseVersion.testCase.key.toLowerCase().includes(q) ||
-      e.testCaseVersion.testCase.summary.toLowerCase().includes(q)
+      e.testCaseVersion?.testCase?.key?.toLowerCase().includes(q) ||
+      e.testCaseVersion?.testCase?.summary?.toLowerCase().includes(q)
     );
   }
-  if (sortBy === "key") displayed.sort((a, b) => a.testCaseVersion.testCase.key.localeCompare(b.testCaseVersion.testCase.key));
-  else if (sortBy === "summary") displayed.sort((a, b) => a.testCaseVersion.testCase.summary.localeCompare(b.testCaseVersion.testCase.summary));
+  if (sortBy === "key") displayed.sort((a, b) => (a.testCaseVersion?.testCase?.key ?? "").localeCompare(b.testCaseVersion?.testCase?.key ?? ""));
+  else if (sortBy === "summary") displayed.sort((a, b) => (a.testCaseVersion?.testCase?.summary ?? "").localeCompare(b.testCaseVersion?.testCase?.summary ?? ""));
   else if (sortBy === "result") displayed.sort((a, b) => a.status.localeCompare(b.status));
 
   const selectedExec = cycle.executions.find((e) => e.id === selectedId) ?? null;
@@ -1050,7 +1050,7 @@ export default function CycleDetailPage() {
       {/* Start Execution confirmation modal */}
       {startExecId && (() => {
         const exec = cycle.executions.find((e) => e.id === startExecId);
-        const tc = exec?.testCaseVersion.testCase;
+        const tc = exec?.testCaseVersion?.testCase;
         const userName = (session?.user?.name as string | undefined) ?? (session?.user?.email as string | undefined) ?? "Current User";
         const now = new Date();
         return (

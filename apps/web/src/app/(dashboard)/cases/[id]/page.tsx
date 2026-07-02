@@ -867,7 +867,7 @@ function ExecutionHistoryTab({ testCaseId, projectId }: { testCaseId: string; pr
               </td>
               <td className="px-4 py-2.5 text-muted-foreground">{ex.assignee?.name ?? "—"}</td>
               <td className="px-4 py-2.5 text-muted-foreground text-xs">
-                {ex.executedAt ? new Date(ex.executedAt).toLocaleDateString() : "—"}
+                {ex.executedAt ? new Date(ex.executedAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
               </td>
             </tr>
           ))}

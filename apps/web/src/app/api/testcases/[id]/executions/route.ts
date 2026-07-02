@@ -41,6 +41,9 @@ export async function GET(
             steps: { orderBy: { order: "asc" } },
           },
         },
+        testCycle: {
+          select: { id: true, key: true, summary: true },
+        },
         assignee: {
           select: { id: true, name: true, email: true, image: true },
         },

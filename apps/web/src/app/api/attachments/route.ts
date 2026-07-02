@@ -84,15 +84,23 @@ export async function GET(req: NextRequest) {
   const entityType = searchParams.get("entityType");
   const entityId = searchParams.get("entityId");
   const executionId = searchParams.get("executionId");
-  const projectId = searchParams.get("projectId");
-
-  // Verify project access
-  if (!projectId) return err("projectId is required");
-  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
-  if (!access) return err("Forbidden", 403);
+  let projectId = searchParams.get("projectId");
 
   // Support both old style (executionId) and new style (entityType + entityId)
   if (executionId && !entityType && !entityId) {
+    // Derive projectId from execution if not provided
+    if (!projectId) {
+      const execution = await prisma.testCaseExecution.findUnique({
+        where: { id: executionId },
+        select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } }
+      });
+      projectId = execution?.testCaseVersion?.testCase?.projectId ?? null;
+    }
+    if (!projectId) return err("Execution not found", 404);
+
+    const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+    if (!access) return err("Forbidden", 403);
+
     const attachments = await prisma.attachment.findMany({
       where: { executionId },
       include: {
@@ -108,6 +116,35 @@ export async function GET(req: NextRequest) {
   if (!entityType || !entityId) {
     return err("entityType and entityId required");
   }
+
+  // Derive projectId from entity if not provided
+  if (!projectId) {
+    if (entityType === "EXECUTION") {
+      const execution = await prisma.testCaseExecution.findUnique({
+        where: { id: entityId },
+        select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } }
+      });
+      projectId = execution?.testCaseVersion?.testCase?.projectId ?? null;
+    } else if (entityType === "STEP_EXECUTION") {
+      const stepExecution = await prisma.testStepExecution.findUnique({
+        where: { id: entityId },
+        select: { execution: { select: { testCaseVersion: { select: { testCase: { select: { projectId: true } } } } } } }
+      });
+      projectId = stepExecution?.execution?.testCaseVersion?.testCase?.projectId ?? null;
+    } else if (entityType === "TEST_CASE") {
+      const tc = await prisma.testCase.findUnique({
+        where: { id: entityId },
+        select: { projectId: true }
+      });
+      projectId = tc?.projectId ?? null;
+    }
+  }
+
+  if (!projectId) return err("Entity not found", 404);
+
+  // Verify project access
+  const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
+  if (!access) return err("Forbidden", 403);
 
   const where: Record<string, unknown> = {};
   if (entityType === "EXECUTION") {

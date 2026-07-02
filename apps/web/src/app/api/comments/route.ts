@@ -17,10 +17,34 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const entityType = searchParams.get("entityType");
   const entityId = searchParams.get("entityId");
-  const projectId = searchParams.get("projectId");
+  let projectId = searchParams.get("projectId");
 
   if (!entityType || !entityId) return err("entityType and entityId required");
-  if (!projectId) return err("projectId is required");
+
+  // If projectId not provided, derive it from the entity
+  if (!projectId) {
+    if (entityType === "TEST_CASE") {
+      const tc = await prisma.testCase.findUnique({
+        where: { id: entityId },
+        select: { projectId: true },
+      });
+      projectId = tc?.projectId ?? null;
+    } else if (entityType === "TEST_CYCLE") {
+      const cycle = await prisma.testCycle.findUnique({
+        where: { id: entityId },
+        select: { projectId: true },
+      });
+      projectId = cycle?.projectId ?? null;
+    } else if (entityType === "TEST_PLAN") {
+      const plan = await prisma.testPlan.findUnique({
+        where: { id: entityId },
+        select: { projectId: true },
+      });
+      projectId = plan?.projectId ?? null;
+    }
+  }
+
+  if (!projectId) return err("Project not found", 404);
 
   // Verify user has access to the project
   const access = await verifyProjectAccess(caller.userId, projectId, caller.tenantId);
